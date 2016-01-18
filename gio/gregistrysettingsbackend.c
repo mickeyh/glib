@@ -1100,22 +1100,6 @@ g_registry_backend_reset (GSettingsBackend *backend,
   g_settings_backend_changed (backend, key_name, origin_tag);
 }
 
-/* Not implemented and probably beyond the scope of this backend */
-static gboolean
-g_registry_backend_get_writable (GSettingsBackend *backend,
-                                 const gchar      *key_name)
-{
-  return TRUE;
-}
-
-static GPermission *
-g_registry_backend_get_permission (GSettingsBackend *backend,
-                                   const gchar      *key_name)
-{
-  return g_simple_permission_new (TRUE);
-}
-
-
 /********************************************************************************
  * Spot-the-difference engine
  ********************************************************************************/

@@ -518,124 +518,25 @@ g_settings_backend_path_writable_changed (GSettingsBackend *backend,
                                       path, NULL, NULL);
 }
 
-typedef struct
-{
-  const gchar **keys;
-  GVariant **values;
-  gint prefix_len;
-  gchar *prefix;
-} FlattenState;
-
-static gboolean
-g_settings_backend_flatten_one (gpointer key,
-                                gpointer value,
-                                gpointer user_data)
-{
-  FlattenState *state = user_data;
-  const gchar *skey = key;
-  gint i;
-
-  g_return_val_if_fail (is_key (key), TRUE);
-
-  /* calculate longest common prefix */
-  if (state->prefix == NULL)
-    {
-      gchar *last_byte;
-
-      /* first key?  just take the prefix up to the last '/' */
-      state->prefix = g_strdup (skey);
-      last_byte = strrchr (state->prefix, '/') + 1;
-      state->prefix_len = last_byte - state->prefix;
-      *last_byte = '\0';
-    }
-  else
-    {
-      /* find the first character that does not match.  we will
-       * definitely find one because the prefix ends in '/' and the key
-       * does not.  also: no two keys in the tree are the same.
-       */
-      for (i = 0; state->prefix[i] == skey[i]; i++);
-
-      /* check if we need to shorten the prefix */
-      if (state->prefix[i] != '\0')
-        {
-          /* find the nearest '/', terminate after it */
-          while (state->prefix[i - 1] != '/')
-            i--;
-
-          state->prefix[i] = '\0';
-          state->prefix_len = i;
-        }
-    }
-
-
-  /* save the entire item into the array.
-   * the prefixes will be removed later.
-   */
-  *state->keys++ = key;
-
-  if (state->values)
-    *state->values++ = value;
-
-  return FALSE;
-}
-
-/**
- * g_settings_backend_flatten_tree:
- * @tree: a #GTree containing the changes
- * @path: (out): the location to save the path
- * @keys: (out) (transfer container) (array zero-terminated=1): the
- *        location to save the relative keys
- * @values: (out) (allow-none) (transfer container) (array zero-terminated=1):
- *          the location to save the values, or %NULL
- *
- * Calculate the longest common prefix of all keys in a tree and write
- * out an array of the key names relative to that prefix and,
- * optionally, the value to store at each of those keys.
- *
- * You must free the value returned in @path, @keys and @values using
- * g_free().  You should not attempt to free or unref the contents of
- * @keys or @values.
- *
- * Since: 2.26
- **/
 void
 g_settings_backend_flatten_tree (GTree         *tree,
                                  gchar        **path,
                                  const gchar ***keys,
                                  GVariant    ***values)
 {
-  FlattenState state = { 0, };
-  gsize nnodes;
-
-  nnodes = g_tree_nnodes (tree);
-
-  *keys = state.keys = g_new (const gchar *, nnodes + 1);
-  state.keys[nnodes] = NULL;
-
-  if (values != NULL)
-    {
-      *values = state.values = g_new (GVariant *, nnodes + 1);
-      state.values[nnodes] = NULL;
-    }
-
-  g_tree_foreach (tree, g_settings_backend_flatten_one, &state);
-  g_return_if_fail (*keys + nnodes == state.keys);
-
-  *path = state.prefix;
-  while (nnodes--)
-    *--state.keys += state.prefix_len;
+  g_assert_not_reached ();
 }
 
 /**
- * g_settings_backend_changed_tree:
+ * g_settings_backend_changeset_applied:
  * @backend: a #GSettingsBackend implementation
- * @tree: a #GTree containing the changes
+ * @changeset: the #GSettingsBackendChangeset corresponding to the change
  * @origin_tag: the origin tag
  *
  * This call is a convenience wrapper.  It gets the list of changes from
- * @tree, computes the longest common prefix and calls
- * g_settings_backend_changed().
+ * the changeset and emits the correct set of change signals.  If the
+ * changeset is not already sealed, then calling this function will seal
+ * it.
  *
  * Since: 2.26
  **/
@@ -644,36 +545,39 @@ g_settings_backend_changed_tree (GSettingsBackend *backend,
                                  GTree            *tree,
                                  gpointer          origin_tag)
 {
-  const gchar **keys;
-  gchar *path;
+  g_assert_not_reached ();
+}
+
+
+void
+g_settings_backend_changeset_applied (GSettingsBackend          *backend,
+                                      GSettingsBackendChangeset *changeset,
+                                      gpointer                   origin_tag)
+{
+  const gchar * const *paths;
+  const gchar *prefix;
+  guint n_items;
 
   g_return_if_fail (G_IS_SETTINGS_BACKEND (backend));
 
-  g_settings_backend_flatten_tree (tree, &path, &keys, NULL);
+  n_items = g_settings_backend_changeset_describe (changeset, &prefix, &paths, NULL);
 
-#ifdef DEBUG_CHANGES
-  {
-    gint i;
+  if (n_items == 1)
+    {
+      g_assert (paths[0][0] == '\0');
+      g_settings_backend_changed (backend, prefix, origin_tag);
+    }
 
-    g_print ("----\n");
-    g_print ("changed_tree(): prefix %s\n", path);
-    for (i = 0; keys[i]; i++)
-      g_print ("  %s\n", keys[i]);
-    g_print ("----\n");
-  }
-#endif
-
-  g_settings_backend_keys_changed (backend, path, keys, origin_tag);
-  g_free (path);
-  g_free (keys);
+  else if (n_items > 1)
+    g_settings_backend_keys_changed (backend, prefix, paths, origin_tag);
 }
 
 /*< private >
- * g_settings_backend_read:
+ * g_settings_backend_read_value:
  * @backend: a #GSettingsBackend implementation
  * @key: the key to read
  * @expected_type: a #GVariantType
- * @default_value: if the default value should be returned
+ * @read_through: a #GQueue of #GSettingsBackendChangeset
  *
  * Reads a key. This call will never block.
  *
@@ -684,22 +588,30 @@ g_settings_backend_changed_tree (GSettingsBackend *backend,
  * the backend stored a value of a different type then %NULL will be
  * returned.
  *
- * If @default_value is %TRUE then this gets the default value from the
- * backend (ie: the one that the backend would contain if
- * g_settings_reset() were called).
+ * If @read_through is given then the read is performed as if the
+ * changesets in the queue had first been applied to the underlying
+ * backend.  @read_through may be modified during the duration of this
+ * call but it will be returned to its original value before the call
+ * returns.
+ *
+ * Unlike the backend vfuncs, this function will always return a value
+ * of the correct type.  If the backend returned an incorrect type then
+ * this function will return %NULL.
  *
  * Returns: the value that was read, or %NULL
  */
 GVariant *
-g_settings_backend_read (GSettingsBackend   *backend,
-                         const gchar        *key,
-                         const GVariantType *expected_type,
-                         gboolean            default_value)
+g_settings_backend_read_value (GSettingsBackend   *backend,
+                               const gchar        *key,
+                               const GVariantType *expected_type,
+                               GQueue             *read_through,
+                               gboolean            user_value_only,
+                               gboolean            default_value)
 {
   GVariant *value;
 
-  value = G_SETTINGS_BACKEND_GET_CLASS (backend)
-    ->read (backend, key, expected_type, default_value);
+  value = G_SETTINGS_BACKEND_GET_CLASS (backend)->read_value (backend, key, expected_type,
+                                                              read_through, user_value_only, default_value);
 
   if (value != NULL)
     value = g_variant_take_ref (value);
@@ -790,20 +702,14 @@ g_settings_backend_write (GSettingsBackend *backend,
 /*< private >
  * g_settings_backend_write_tree:
  * @backend: a #GSettingsBackend implementation
- * @tree: a #GTree containing key-value pairs to write
+ * @changeset: a #GSettingsBackendChangeset containing the change
  * @origin_tag: the origin tag
  *
  * Writes one or more keys.  This call will never block.
  *
- * The key of each item in the tree is the key name to write to and the
- * value is a #GVariant to write.  The proper type of #GTree for this
- * call can be created with g_settings_backend_create_tree().  This call
- * might take a reference to the tree; you must not modified the #GTree
- * after passing it to this call.
- *
- * This call does not fail.  During this call a #GSettingsBackend::changed
- * signal will be emitted if any keys have been changed.  The new values of
- * all updated keys will be visible to any signal callbacks.
+ * During this call a #GSettingsBackend::changed signal will be emitted
+ * if any keys have been changed.  The new values of all updated keys
+ * will be visible to any signal callbacks.
  *
  * One possible method that an implementation might deal with failures is
  * to emit a second "changed" signal (either during this call, or later)
@@ -811,12 +717,11 @@ g_settings_backend_write (GSettingsBackend *backend,
  * old values.
  */
 gboolean
-g_settings_backend_write_tree (GSettingsBackend *backend,
-                               GTree            *tree,
-                               gpointer          origin_tag)
+g_settings_backend_write_changeset (GSettingsBackend          *backend,
+                                    GSettingsBackendChangeset *changeset,
+                                    gpointer                   origin_tag)
 {
-  return G_SETTINGS_BACKEND_GET_CLASS (backend)
-    ->write_tree (backend, tree, origin_tag);
+  return G_SETTINGS_BACKEND_GET_CLASS (backend)->write_changeset (backend, changeset, origin_tag);
 }
 
 /*< private >
@@ -891,6 +796,94 @@ g_settings_backend_subscribe (GSettingsBackend *backend,
     ->subscribe (backend, name);
 }
 
+static GVariant *
+g_settings_backend_real_read_value (GSettingsBackend   *backend,
+                                    const gchar        *key,
+                                    const GVariantType *expected_type,
+                                    GQueue             *read_through,
+                                    gboolean            user_value_only,
+                                    gboolean            default_value)
+{
+  GVariant *value = NULL;
+
+  if (default_value)
+    return G_SETTINGS_BACKEND_GET_CLASS (backend)->read (backend, key, expected_type, TRUE);
+
+  if (g_settings_backend_check_changeset_queue (read_through, key, &value))
+    return value;
+
+  if (user_value_only)
+    return G_SETTINGS_BACKEND_GET_CLASS (backend)->read_user_value (backend, key, expected_type);
+
+  return G_SETTINGS_BACKEND_GET_CLASS (backend)->read (backend, key, expected_type, FALSE);
+}
+
+static gboolean
+g_settings_backend_real_write (GSettingsBackend *backend,
+                               const gchar      *key,
+                               GVariant         *value,
+                               gpointer          origin_tag)
+{
+  GSettingsBackendChangeset *changeset;
+  gboolean success;
+
+  changeset = g_settings_backend_changeset_new_write (key, value);
+  success = g_settings_backend_write_changeset (backend, changeset, origin_tag);
+  g_settings_backend_changeset_unref (changeset);
+
+  return success;
+}
+
+static void
+g_settings_backend_real_reset (GSettingsBackend *backend,
+                               const gchar      *key,
+                               gpointer          origin_tag)
+{
+  gboolean success;
+
+  success = g_settings_backend_real_write (backend, key, NULL, origin_tag);
+
+  if (!success)
+    g_critical ("%s is behaving incorrectly: reset() must always succeed",
+               g_type_name (G_TYPE_FROM_INSTANCE (backend)));
+}
+
+static gboolean
+add_to_tree (const gchar *key,
+             GVariant    *value,
+             gpointer     user_data)
+{
+  g_tree_insert (user_data, (gpointer) key, value);
+
+  return TRUE;
+}
+
+static gboolean
+g_settings_backend_real_write_changeset (GSettingsBackend          *backend,
+                                         GSettingsBackendChangeset *changeset,
+                                         gpointer                   origin_tag)
+{
+  gboolean success;
+  GTree *tree;
+
+  tree = g_tree_new ((GCompareFunc) strcmp);
+
+  g_settings_backend_changeset_all (changeset, add_to_tree, tree);
+
+  success = G_SETTINGS_BACKEND_GET_CLASS (backend)->write_tree (backend, tree, origin_tag);
+
+  g_tree_unref (tree);
+
+  return success;
+}
+
+static gboolean
+g_settings_backend_real_get_writable (GSettingsBackend *backend,
+                                      const gchar      *key)
+{
+  return TRUE;
+}
+
 static void
 g_settings_backend_finalize (GObject *object)
 {
@@ -908,14 +901,6 @@ ignore_subscription (GSettingsBackend *backend,
 {
 }
 
-static GVariant *
-g_settings_backend_real_read_user_value (GSettingsBackend   *backend,
-                                         const gchar        *key,
-                                         const GVariantType *expected_type)
-{
-  return g_settings_backend_read (backend, key, expected_type, FALSE);
-}
-
 static void
 g_settings_backend_init (GSettingsBackend *backend)
 {
@@ -928,35 +913,15 @@ g_settings_backend_class_init (GSettingsBackendClass *class)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (class);
 
+  class->reset = g_settings_backend_real_reset;
+  class->write = g_settings_backend_real_write;
+  class->write_changeset = g_settings_backend_real_write_changeset;
+  class->read_value = g_settings_backend_real_read_value;
+  class->get_writable = g_settings_backend_real_get_writable;
   class->subscribe = ignore_subscription;
   class->unsubscribe = ignore_subscription;
 
-  class->read_user_value = g_settings_backend_real_read_user_value;
-
   gobject_class->finalize = g_settings_backend_finalize;
-}
-
-static void
-g_settings_backend_variant_unref0 (gpointer data)
-{
-  if (data != NULL)
-    g_variant_unref (data);
-}
-
-/*< private >
- * g_settings_backend_create_tree:
- *
- * This is a convenience function for creating a tree that is compatible
- * with g_settings_backend_write().  It merely calls g_tree_new_full()
- * with strcmp(), g_free() and g_variant_unref().
- *
- * Returns: a new #GTree
- */
-GTree *
-g_settings_backend_create_tree (void)
-{
-  return g_tree_new_full ((GCompareDataFunc) strcmp, NULL,
-                          g_free, g_settings_backend_variant_unref0);
 }
 
 static gboolean
@@ -997,31 +962,6 @@ g_settings_backend_get_default (void)
 				      "GSETTINGS_BACKEND",
 				      g_settings_backend_verify);
   return g_object_ref (backend);
-}
-
-/*< private >
- * g_settings_backend_get_permission:
- * @backend: a #GSettingsBackend
- * @path: a path
- *
- * Gets the permission object associated with writing to keys below
- * @path on @backend.
- *
- * If this is not implemented in the backend, then a %TRUE
- * #GSimplePermission is returned.
- *
- * Returns: a non-%NULL #GPermission. Free with g_object_unref()
- */
-GPermission *
-g_settings_backend_get_permission (GSettingsBackend *backend,
-                                   const gchar      *path)
-{
-  GSettingsBackendClass *class = G_SETTINGS_BACKEND_GET_CLASS (backend);
-
-  if (class->get_permission)
-    return class->get_permission (backend, path);
-
-  return g_simple_permission_new (TRUE);
 }
 
 /*< private >
@@ -1130,4 +1070,21 @@ g_settings_backend_is_dir (const gchar *string)
     return FALSE;
 
   return TRUE;
+}
+
+gboolean
+g_settings_backend_check_changeset_queue (const GQueue  *queue,
+                                          const gchar   *key,
+                                          GVariant     **value)
+{
+  GList *link;
+
+  if (queue == NULL)
+    return FALSE;
+
+  for (link = queue->tail; link; link = link->prev)
+    if (g_settings_backend_changeset_get (link->data, key, value))
+      return TRUE;
+
+  return FALSE;
 }

@@ -1155,10 +1155,8 @@ g_settings_read_from_backend (GSettings          *settings,
   gchar *path;
 
   path = g_strconcat (settings->priv->path, key->name, NULL);
-  if (user_value_only)
-    value = g_settings_backend_read_user_value (settings->priv->backend, path, key->type);
-  else
-    value = g_settings_backend_read (settings->priv->backend, path, key->type, default_value);
+  value = g_settings_backend_read_value (settings->priv->backend, path, key->type,
+                                         NULL, user_value_only, default_value);
   g_free (path);
 
   if (value != NULL)
