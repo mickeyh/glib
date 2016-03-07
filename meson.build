@@ -21,35 +21,26 @@ inc_dirs = include_directories('.', 'glib', 'gmodule')
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
 
+# accumulated list of defines as we check for them, so we can easily
+# use them later in test programs (autoconf does this automatically)
+glib_conf_prefix = ''
+
 glib_conf.set('GLIB_MAJOR_VERSION', major_version)
 glib_conf.set('GLIB_MINOR_VERSION', minor_version)
 glib_conf.set('GLIB_MICRO_VERSION', micro_version)
 glib_conf.set('GLIB_INTERFACE_AGE', micro_version)
-glib_conf.set('GLIB_BINARY_AGE', 363)
+glib_conf.set('GLIB_BINARY_AGE', major_version * 100 + minor_version * 10 + micro_version)
 glib_conf.set('GETTEXT_PACKAGE', '"glib20"')
 glib_conf.set('ENABLE_NLS', 1)
-glib_conf.set('HAVE_VASPRINTF', 1)
-glib_conf.set('HAVE_VPRINTF', 1)
-glib_conf.set('HAVE_GOOD_PRINTF', 1)
+glib_conf.set('HAVE_VASPRINTF', 1) # FIXME
+glib_conf.set('HAVE_VPRINTF', 1) # FIXME
+glib_conf.set('HAVE_GOOD_PRINTF', 1) # FIXME
 
 if run_command('xgettext', '--help').returncode() != 0
   error('GNU Gettext required currently.')
 endif
 glib_conf.set('HAVE_GETTEXT', 1)
 glib_conf.set('GLIB_LOCALE_DIR', '"share/locale"')
-
-if cc.has_header('locale.h')
-  glib_conf.set('HAVE_LOCALE_H', 1)
-  lc_msg_test = '''#include<locale.h>
-void foo() { LC_MESSAGES; }
-'''
-  if cc.compiles(lc_msg_test)
-    glib_conf.set('HAVE_LC_MESSAGES', 1)
-  endif
-endif
-if cc.has_header('xlocale.h')
-  glib_conf.set('HAVE_XLOCALE_H', 1)
-endif
 
 # FIXME: what about Cygwin (G_WITH_CYGWIN)
 if host_machine.system() == 'windows'
@@ -60,125 +51,70 @@ else
 endif
 glibconfig_conf.set('glib_os', glib_os)
 
-glib_conf.set('HAVE_STDIO_H', 1)
-glib_conf.set('HAVE_STDDEF_H', 1)
-if cc.has_header('dirent.h')
-  glib_conf.set('HAVE_DIRENT_H', 1)
-endif
-if cc.has_header('float.h')
-  glib_conf.set('HAVE_FLOAT_H', 1)
-endif
-if cc.has_header('limits.h')
-  glib_conf.set('HAVE_LIMITS_H', 1)
-endif
-if cc.has_header('pwd.h')
-  glib_conf.set('HAVE_PWD_H', 1)
-endif
-if cc.has_header('grp.h')
-  glib_conf.set('HAVE_GRP_H', 1)
-endif
-if cc.has_header('sys/param.h')
-  glib_conf.set('HAVE_SYS_PARAM_H', 1)
-  sysparam_include = '#include<sys/param.h>'
-else
-  sysparam_include = ''
-endif
-if cc.has_header('poll.h')
-  glib_conf.set('HAVE_POLL_H', 1)
-endif
-if cc.has_header('sys/resource.h')
-  glib_conf.set('HAVE_SYS_RESOURCE_H', 1)
-endif
+# check for header files
 
-if cc.has_header('sys/time.h')
-  glib_conf.set('HAVE_SYS_TIME_H', 1)
-endif
-if cc.has_header('sys/times.h')
-  glib_conf.set('HAVE_SYS_TIMES_H', 1)
-endif
-if cc.has_header('sys/wait.h')
-  glib_conf.set('HAVE_SYS_WAIT_H', 1)
-endif
-if cc.has_header('unistd.h')
-  glib_conf.set('HAVE_UNISTD_H', 1)
-endif
-if cc.has_header('values.h')
-  glib_conf.set('HAVE_VALUES_H', 1)
-endif
+include_sys_param_h_if_available = '''
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif'''
 
+headers = [
+  [ 'locale.h', 'HAVE_LOCALE_H' ],
+  [ 'xlocale.h', 'HAVE_XLOCALE_H' ],
+  [ 'float.h', 'HAVE_FLOAT_H' ],
+  [ 'limits.h', 'HAVE_LIMITS_H' ],
+  [ 'pwd.h', 'HAVE_PWD_H' ],
+  [ 'grp.h', 'HAVE_GRP_H' ],
+  [ 'poll.h', 'HAVE_POLL_H' ],
+  [ 'sys/param.h', 'HAVE_SYS_PARAM_H' ],
+  [ 'sys/resource.h', 'HAVE_SYS_RESOURCE_H' ],
+  [ 'mach/mach_time.h', 'HAVE_MACH_MACH_TIME_H' ],
+  [ 'sys/select.h', 'HAVE_SYS_SELECT_H' ],
+  [ 'stdint.h', 'HAVE_STDINT_H' ],
+  [ 'inttypes.h', 'HAVE_INTTYPES_H' ],
+  [ 'sched.h', 'HAVE_SCHED_H' ],
+  [ 'malloc.h', 'HAVE_MALLOC_H' ],
+  [ 'sys/vfs.h', 'HAVE_SYS_VFS_H' ],
+  [ 'sys/vmount.h', 'HAVE_SYS_VMOUNT_H' ],
+  [ 'sys/statfs.h', 'HAVE_SYS_STATFS_H' ],
+  [ 'sys/statvfs.h', 'HAVE_SYS_STATVFS_H' ],
+  [ 'sys/filio.h', 'HAVE_SYS_FILIO_H' ],
+  [ 'mntent.h', 'HAVE_MNTENT_H' ],
+  [ 'sys/mnttab.h', 'HAVE_SYS_MNTTAB_H' ],
+  [ 'sys/vfstab.h', 'HAVE_SYS_VFSTAB_H' ],
+  [ 'sys/mntctl.h', 'HAVE_SYS_mntctl_H' ],
+  [ 'fstab.h', 'HAVE_FSTAB_H' ],
+  [ 'linux/magic.h', 'HAVE_LINUX_MAGIC_H' ],
+  [ 'sys/prctl.h', 'HAVE_SYS_PRCTL_H' ],
+  [ 'dirent.h', 'HAVE_DIRENT_H' ], # Some versions of MSC lack these
+  [ 'sys/time.h', 'HAVE_SYS_TIME_H' ], # Some versions of MSC lack these
+  [ 'sys/times.h', 'HAVE_SYS_TIMES_H' ],
+  [ 'sys/wait.h', 'HAVE_SYS_WAIT_H' ],
+  [ 'unistd.h', 'HAVE_UNISTD_H' ],
+  [ 'values.h', 'HAVE_VALUES_H' ],
+  [ 'sys/types.h', 'HAVE_SYS_TYPES_H' ],
+  [ 'sys/uio.h', 'HAVE_SYS_UIO_H' ],
+  [ 'sys/mkdev.h', 'HAVE_SYS_MKDEV_H' ],
+  [ 'sys/mount.h', 'HAVE_SYS_MOUNT_H', include_sys_param_h_if_available ],
+  [ 'sys/sysctl.h', 'HAVE_SYS_SYSCTL_H', include_sys_param_h_if_available ],
+]
 
-if cc.has_header('sys/select.h')
-  glib_conf.set('HAVE_SYS_SELECT_H', 1)
-endif
-if cc.has_header('sys/types.h')
-  glib_conf.set('HAVE_SYS_TYPES_H', 1)
-endif
-if cc.has_header('stdint.h')
-  glib_conf.set('HAVE_STDINT_H', 1)
-endif
-if cc.has_header('inttypes.h')
-  glib_conf.set('HAVE_INTTYPES_H', 1)
-endif
-if cc.has_header('sched.h')
-  glib_conf.set('HAVE_SCHED_H', 1)
-endif
-if cc.has_header('malloc.h')
-  glib_conf.set('HAVE_MALLOC_H', 1)
-endif
+foreach h : headers
+  header_check_prefix = glib_conf_prefix
+  if h.length() == 3
+    header_check_prefix = header_check_prefix + h[2]
+  endif
+  if cc.has_header(h[0], prefix: header_check_prefix)
+    glib_conf.set(h[1], 1)
+    glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(h[1])
+  endif
+endforeach
 
-if cc.has_header('sys/vfs.h')
-  glib_conf.set('HAVE_SYS_VFS_H', 1)
-endif
-if cc.has_header('sys/vmount.h')
-  glib_conf.set('HAVE_SYS_VMOUNT_H', 1)
-endif
-if cc.has_header('sys/statvfs.h')
-  glib_conf.set('HAVE_SYS_STATVFS_H', 1)
-endif
-if cc.has_header('sys/filio.h')
-  glib_conf.set('HAVE_SYS_FILIO_H', 1)
-endif
-
-if cc.has_header('mntent.h')
-  glib_conf.set('HAVE_MNTENT_H', 1)
-endif
-if cc.has_header('sys/mnttab.h')
-  glib_conf.set('HAVE_SYS_MNTTAB_H', 1)
-endif
-if cc.has_header('sys/vfstab.h')
-  glib_conf.set('HAVE_SYS_VFSTAB_H', 1)
-endif
-if cc.has_header('sys/mntctl.h')
-  glib_conf.set('HAVE_SYS_mntctl_H', 1)
-endif
-if cc.has_header('fstab.h')
-  glib_conf.set('HAVE_FSTAB_H', 1)
-endif
-
-if cc.has_header('sys/uio.h')
-  glib_conf.set('HAVE_SYS_UIO_H', 1)
-endif
-if cc.has_header('sys/mkdev.h')
-  glib_conf.set('HAVE_SYS_MKDEV_H', 1)
-endif
-
-if cc.has_header('linux/magic.h')
-  glib_conf.set('HAVE_LINUX_MAGIC_H', 1)
-endif
-
-if cc.has_header('sys/prctl.h')
-  glib_conf.set('HAVE_SYS_PRCTL_H', 1)
-endif
-
-if cc.has_header('sys/mount.h', prefix : sysparam_include)
-  glib_conf.set('HAVE_SYS_MOUNT_H', 1)
-endif
-if cc.has_header('sys/sysctl.h', prefix : sysparam_include)
-  glib_conf.set('HAVE_SYS_SYSCTL_H', 1)
-endif
-
-if cc.has_header('xlocale.h')
-  glib_conf.set('HAVE_XLOCALE_H', 1)
+if glib_conf.has('HAVE_LOCALE_H')
+  if cc.compiles('''#include <locale.h>
+                    void foo() { LC_MESSAGES; }''')
+    glib_conf.set('HAVE_LC_MESSAGES', 1)
+  endif
 endif
 
 if cc.has_member('struct stat', 'st_mtimensec', prefix : '#include<sys/stat.h>')
@@ -229,10 +165,6 @@ if cc.has_member('struct stat', 'f_fstypename', prefix : blkprefix)
 endif
 if cc.has_member('struct stat', 'f_bavail', prefix : blkprefix)
   glib_conf.set('HAVE_STRUCT_STAT_F_BAVAIL', 1)
-endif
-
-if cc.has_header('string.h')
-  glib_conf.set('HAVE_STRING_H', 1)
 endif
 
 # Let's configuring love
