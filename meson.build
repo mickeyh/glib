@@ -1,13 +1,21 @@
-project('glib', 'c')
+project('glib', 'c', 'cpp',
+  version : '2.47.6',
+  meson_version : '>= 0.30.0',
+  default_options : [ 'warning_level=1',
+                      'c_std=gnu99',
+                      'buildtype=debugoptimized' ])
 
 cc = meson.get_compiler('c')
+cxx = meson.get_compiler('cpp')
 
-major_version = 3
-minor_version = 36
-micro_version = 3
-interface_version = 3
+add_global_arguments('-Werror', language : 'c') # FIXME
 
-glib_version = '3.36.3'
+major_version = 2
+minor_version = 47
+micro_version = 6
+interface_version = 2 # FIXME
+
+glib_version = meson.project_version()
 inc_dirs = include_directories('.', 'glib', 'gmodule')
 
 glib_conf = configuration_data()
@@ -43,7 +51,8 @@ if cc.has_header('xlocale.h')
   glib_conf.set('HAVE_XLOCALE_H', 1)
 endif
 
-if host.name() == 'windows'
+# FIXME: what about Cygwin (G_WITH_CYGWIN)
+if host_machine.system() == 'windows'
   glib_os = '''#define G_OS_WIN32
 #define G_PLATFORM_WIN32'''
 else
@@ -234,6 +243,7 @@ voidp_size = cc.sizeof('void*')
 long_size = cc.sizeof('long')
 long_long_size = cc.sizeof('long long')
 sizet_size = cc.sizeof('size_t')
+ssizet_size = cc.sizeof('ssize_t')
 
 char_align = cc.alignment('char')
 short_align = cc.alignment('short')
@@ -251,6 +261,7 @@ glib_conf.set('SIZEOF_SHORT', short_size)
 glib_conf.set('SIZEOF_LONG', long_size)
 glib_conf.set('SIZEOF_LONG_LONG', long_long_size)
 glib_conf.set('SIZEOF_SIZE_T', sizet_size)
+glib_conf.set('SIZEOF_SSIZE_T', ssizet_size)
 glib_conf.set('SIZEOF_VOID_P', voidp_size)
 
 if long_size == 2
@@ -337,36 +348,53 @@ glibconfig_conf.set('gint64_constant', gint64_constant)
 glibconfig_conf.set('guint64_constant', guint64_constant)
 glib_conf.set('ALIGNOF_GUINT64', guint64_align)
 
-# Horrible hack.
-glibconfig_conf.set('gintbits', 32)
-
-if host.name() == 'windows'
+if host_machine.system() == 'windows'
   glibconfig_conf.set('g_pid_type', 'void*')
+  if host_machine.cpu_family() == 'x86_64'
+    glibconfig_conf.set('g_pollfd_format', '"%#I64x"')
+  else
+    glibconfig_conf.set('g_pollfd_format', '"%#x"')
+  endif
+  # FIXME:
+  # Unfortunately the mingw implementations of C99-style snprintf and vsnprintf
+  # don't seem to be quite good enough, at least not in mingw-runtime-3.14.
+  # (Sorry, I don't know exactly what is the problem, but it is related to
+  # floating point formatting and decimal point vs. comma.)
+  # The simple tests in AC_FUNC_VSNPRINTF_C99 and AC_FUNC_SNPRINTF_C99 aren't
+  # rigorous enough to notice, though.
+  # So preset the autoconf cache variables.
+  #ac_cv_func_vsnprintf_c99=no
+  #ac_cv_func_snprintf_c99=no
 else
   glibconfig_conf.set('g_pid_type', 'int')
+  glibconfig_conf.set('g_pollfd_format', '"%d"')
 endif
 
 if sizet_size == short_size
   glibconfig_conf.set('glib_size_type_define', 'short')
   glibconfig_conf.set('gsize_modifier', '"h"')
+  glibconfig_conf.set('gssize_modifier', '"h"')
   glibconfig_conf.set('gsize_format', '"hu"')
   glibconfig_conf.set('gssize_format', '"hi"')
   glibconfig_conf.set('glib_msize_type', 'SHRT')
 elif sizet_size == int_size
   glibconfig_conf.set('glib_size_type_define', 'int')
   glibconfig_conf.set('gsize_modifier', '""')
+  glibconfig_conf.set('gssize_modifier', '""')
   glibconfig_conf.set('gsize_format', '"u"')
   glibconfig_conf.set('gssize_format', '"i"')
   glibconfig_conf.set('glib_msize_type', 'INT')
 elif sizet_size == long_size
   glibconfig_conf.set('glib_size_type_define', 'long')
   glibconfig_conf.set('gsize_modifier', '"l"')
+  glibconfig_conf.set('gssize_modifier', '"l"')
   glibconfig_conf.set('gsize_format', '"lu"')
   glibconfig_conf.set('gssize_format', '"li"')
   glibconfig_conf.set('glib_msize_type', 'LONG')
 elif sizet_size == long_long_size
   glibconfig_conf.set('glib_size_type_define', 'long long')
   glibconfig_conf.set('gsize_modifier', '"I64"')
+  glibconfig_conf.set('gssize_modifier', '"I64"')
   glibconfig_conf.set('gsize_format', '"I64u"')
   glibconfig_conf.set('gssize_format', '"I64i"')
   glibconfig_conf.set('glib_msize_type', 'INT64')
@@ -374,10 +402,63 @@ else
   error('Could not determine size of size_t.')
 endif
 
+if voidp_size == int_size
+  glibconfig_conf.set('glib_intptr_type_define', 'int')
+  glibconfig_conf.set('gintptr_modifier', '""')
+  glibconfig_conf.set('gintptr_format', '"i"')
+  glibconfig_conf.set('guintptr_format', '"u"')
+  glibconfig_conf.set('glib_gpi_cast', '(gint)')
+  glibconfig_conf.set('glib_gpui_cast', '(guint)')
+elif voidp_size == long_size
+  glibconfig_conf.set('glib_intptr_type_define', 'long')
+  glibconfig_conf.set('gintptr_modifier', '"l"')
+  glibconfig_conf.set('gintptr_format', '"li"')
+  glibconfig_conf.set('guintptr_format', '"lu"')
+  glibconfig_conf.set('glib_gpi_cast', '(glong)')
+  glibconfig_conf.set('glib_gpui_cast', '(gulong)')
+elif voidp_size == long_long_size
+  glibconfig_conf.set('glib_intptr_type_define', 'long long')
+  glibconfig_conf.set('gintptr_modifier', '"I64"')
+  glibconfig_conf.set('gintptr_format', '"I64i"')
+  glibconfig_conf.set('guintptr_format', '"I64u"')
+  glibconfig_conf.set('glib_gpi_cast', '(gint64)')
+  glibconfig_conf.set('glib_gpui_cast', '(guint64)')
+# FIXME
+#elif voidp_size == __int64_size
+#  glib_intptr_type_define=__int64
+#  gintptr_modifier='"I64"'
+#  gintptr_format='"I64i"'
+#  guintptr_format='"I64u"'
+#  glib_gpi_cast='(gint64)'
+#  glib_gpui_cast='(guint64)'
+else
+  error('Could not determine size of void *')
+endif
+
+glibconfig_conf.set('gintbits', int_size * 8)
+glibconfig_conf.set('glongbits', long_size * 8)
+glibconfig_conf.set('gsizebits', sizet_size * 8)
+glibconfig_conf.set('gssizebits', ssizet_size * 8)
+
+# FIXME: maybe meson should tell us the libsuffix?
+if host_machine.system() == 'windows'
+  g_module_suffix = 'dll'
+elif host_machine.system() == 'darwin'
+  g_module_suffix = 'dylib'
+else
+  g_module_suffix = 'so'
+endif
+glibconfig_conf.set('g_module_suffix', g_module_suffix)
+
+glibconfig_conf.set('GLIB_MAJOR_VERSION', major_version)
+glibconfig_conf.set('GLIB_MINOR_VERSION', minor_version)
+glibconfig_conf.set('GLIB_MICRO_VERSION', micro_version)
+
 glibconfig_conf.set('glib_void_p', voidp_size)
 glibconfig_conf.set('glib_long', long_size)
 glibconfig_conf.set('glib_size_t', sizet_size)
-if host.is_big_endian()
+glibconfig_conf.set('glib_ssize_t', ssizet_size)
+if host_machine.endian() == 'big'
   glibconfig_conf.set('g_byte_order', 'G_BIG_ENDIAN')
   glibconfig_conf.set('g_bs_native', 'BE')
   glibconfig_conf.set('g_bs_alien', 'LE')
@@ -387,93 +468,98 @@ else
   glibconfig_conf.set('g_bs_alien', 'BE')
 endif
 
-if cc.has_header('limits.h')
-  glibconfig_conf.set('INC_LIMITS_H', '#include<limits.h>')
-  glibconfig_conf.set('glib_ms', 'SHRT_MIN')
-  glibconfig_conf.set('glib_Ms', 'SHRT_MAX')
-  glibconfig_conf.set('glib_Mus', 'USHRT_MAX')
-  glibconfig_conf.set('glib_mi', 'INT_MIN')
-  glibconfig_conf.set('glib_Mi', 'INT_MAX')
-  glibconfig_conf.set('glib_Mui', 'UINT_MAX')
-  glibconfig_conf.set('glib_ml', 'LONG_MIN')
-  glibconfig_conf.set('glib_Ml', 'LONG_MAX')
-  glibconfig_conf.set('glib_Mul', 'ULONG_MAX')
+# === va_copy checks ===
+# we currently check for all three va_copy possibilities, so we get
+# all results in config.log for bug reports.
+
+foreach try_func : [ '__va_copy', 'va_copy' ]
+  if cc.compiles('''#include <stdarg.h>
+                    #include <stdlib.h>
+                    void f (int i, ...) {
+                    va_list args1, args2;
+                    va_start (args1, i);
+                    @0@ (args2, args1);
+                    if (va_arg (args2, int) != 42 || va_arg (args1, int) != 42)
+                      exit (1);
+                    va_end (args1); va_end (args2);
+                    }
+                    int main() {
+                      f (0, 42);
+                      return 0;
+                    }'''.format(try_func),
+                    name : try_func + ' check')
+    va_copy_func = try_func
+  endif
+endforeach
+glib_conf.set('G_VA_COPY', va_copy_func)
+glib_vacopy = '#define G_VA_COPY ' + va_copy_func
+
+va_list_val_copy_prog = '''
+  #include <stdarg.h>
+  #include <stdlib.h>
+  void f (int i, ...) {
+    va_list args1, args2;
+    va_start (args1, i);
+    args2 = args1;
+    if (va_arg (args2, int) != 42 || va_arg (args1, int) != 42)
+      exit (1);
+    va_end (args1); va_end (args2);
+  }
+  int main() {
+    f (0, 42);
+    return 0;
+  }'''
+
+# We do this in two steps so if compilation fails already it looks less alarming
+glib_va_val_copy = false
+if cc.compiles(va_list_val_copy_prog, name : 'va_lists can be copied as values')
+  # FIXME: what to do when cross-compiling?
+  if cc.run(va_list_val_copy_prog, 'va_lists can be copied as values').returncode() == 0
+    glib_va_val_copy = true
+  endif
 endif
-if cc.has_header('float.h')
-  glibconfig_conf.set('INC_FLOAT_H', '#include<float.h>')
-  glibconfig_conf.set('glib_mf', 'FLT_MIN')
-  glibconfig_conf.set('glib_Mf', 'FLT_MAX')
-  glibconfig_conf.set('glib_md', 'DBL_MIN')
-  glibconfig_conf.set('glib_Md', 'DBL_MAX')
+if not glib_va_val_copy
+  glib_va_val_copy = false
+  glib_vacopy = glib_vacopy + '\n#define G_VA_COPY_AS_ARRAY 1'
+  glib_conf.set('G_VA_COPY_AS_ARRAY', 1)
 endif
-if cc.has_header('values.h')
-  glibconfig_conf.set('INC_VALUES_H', '#include<values.h>')
-  glibconfig_conf.set('glib_mf', 'MINFLOAT')
-  glibconfig_conf.set('glib_Mf', 'MAXFLOAT')
-  glibconfig_conf.set('glib_md', 'MINDOUBLE')
-  glibconfig_conf.set('glib_Md', 'MAXDOUBLE')
-  glibconfig_conf.set('glib_ms', 'MINSHORT')
-  glibconfig_conf.set('glib_Ms', 'MAXSHORT')
-  glibconfig_conf.set('glib_Mus', '(((gushort)G_MAXSHORT)*2+1)')
-  glibconfig_conf.set('glib_mi', 'MININT')
-  glibconfig_conf.set('glib_Mi', 'MAXINT')
-  glibconfig_conf.set('glib_Mui', '(((guint)G_MAXINT)*2+1)')
-  glibconfig_conf.set('glib_ml', 'MINLONG')
-  glibconfig_conf.set('glib_Ml', 'MAXLONG')
-  glibconfig_conf.set('glib_Mul', '(((gulong)G_MAXLONG)*2+1)')
+glibconfig_conf.set('glib_vacopy', glib_vacopy)
+
+# check for flavours of varargs macros
+g_have_iso_c_varargs = cc.compiles('''
+  void some_func (void) {
+    int a(int p1, int p2, int p3);
+    #define call_a(...) a(1,__VA_ARGS__)
+    call_a(2,3);
+  }''', name : 'ISO C99 varargs macros in C')
+
+if g_have_iso_c_varargs
+  glibconfig_conf.set('g_have_iso_c_varargs', '''
+#ifndef __cplusplus
+# define G_HAVE_ISO_VARARGS 1
+#endif''')
 endif
 
-if cc.compiles('''#undef inline
-	inline int foo () { return 0; }
-	int main () { return foo (); }''')
-  glibconfig_conf.set('G_HAS_INLINE', 1)
-else
-  glibconfig_conf.set('G_HAS_INLINE', 0)
+g_have_iso_cxx_varargs = cxx.compiles('''
+  void some_func (void) {
+    int a(int p1, int p2, int p3);
+    #define call_a(...) a(1,__VA_ARGS__)
+    call_a(2,3);
+  }''', name : 'ISO C99 varargs macros in C++')
+
+if g_have_iso_cxx_varargs
+  glibconfig_conf.set('g_have_iso_cxx_varargs', '''
+#ifdef __cplusplus
+# define G_HAVE_ISO_VARARGS 1
+#endif''')
 endif
 
-# I can't quite decipher what the multiple consecutive checks
-# are trying to do. Use this, fix if it breaks.
-glibconfig_conf.set('G_CAN_INLINE', '1')
-
-vacopy_src = '''#include <stdarg.h>
-#include <stdlib.h>
-void f (int i, ...) {
-va_list args1, args2;
-va_start (args1, i);
-va_copy (args2, args1);
-if (va_arg (args2, int) != 42 || va_arg (args1, int) != 42)
-  exit (1);
-va_end (args1); va_end (args2);
-}
-int main() {
-  f (0, 42);
-  return 0;
-}
-'''
-have_vacopy = cc.compiles(vacopy_src)
-
-__vaacopy_src = '''#include <stdarg.h>
-#include <stdlib.h>
-void f (int i, ...) {
-va_list args1, args2;
-va_start (args1, i);
-__va_copy (args2, args1);
-if (va_arg (args2, int) != 42 || va_arg (args1, int) != 42)
-  exit (1);
-va_end (args1); va_end (args2);
-}
-int main() {
-  f (0, 42);
-  return 0;
-}
-'''
-have___vaacopy = cc.compiles(__vaacopy_src)
-
-if have_vacopy
-  glib_conf.set('G_VA_COPY', 'va_copy')
-elif have___vacopy
-  glib_conf.set('G_VA_COPY', '__va_copy')
-endif
+g_have_gnuc_varargs = cc.compiles('''
+  void some_func (void) {
+    int a(int p1, int p2, int p3);
+    #define call_a(params...) a(1,params)
+    call_a(2,3);
+  }''', name : 'GNUC varargs macros')
 
 if cc.has_header('alloca.h')
   glibconfig_conf.set('GLIB_HAVE_ALLOCA_H', true)
@@ -499,6 +585,8 @@ int main(int argc, char **argv) {
   value_POLLHUP = cc.run(templ.format('POLLHUP')).stdout().strip()
   value_POLLNVAL = cc.run(templ.format('POLLNVAL')).stdout().strip()
 else
+  # FIXME?
+  error('FIX POLL* defines')
   value_POLLIN = 1
   value_POLLOUT = 4
   value_POLLPRI = 2
@@ -514,10 +602,56 @@ glibconfig_conf.set('g_pollerr', value_POLLERR)
 glibconfig_conf.set('g_pollhup', value_POLLHUP)
 glibconfig_conf.set('g_pollnval', value_POLLNVAL)
 
-glibconfig_conf.set('GLIB_USING_SYSTEM_PRINTF', true)
+# Internet address families
+# FIXME: what about Cygwin (G_WITH_CYGWIN)
+if host_machine.system() == 'windows'
+  glib_inet_includes= '''
+#include <winsock2.h>
+'''
+else
+  glib_inet_includes='''
+#include <sys/types.h>
+#include <sys/socket.h>
+'''
+endif
 
-# Need to check $host for this one.
-glibconfig_conf.set('glib_memory_barrier_needed', true)
+net_defines = [
+  [ 'AF_UNIX', 'g_af_unix' ],
+  [ 'AF_INET', 'g_af_inet' ],
+  [ 'AF_INET6', 'g_af_inet6' ],
+  [ 'MSG_OOB', 'g_msg_oob' ],
+  [ 'MSG_PEEK', 'g_msg_peek' ],
+  [ 'MSG_DONTROUTE', 'g_msg_dontroute' ],
+]
+foreach d : net_defines
+  templ = '''@0@
+#include <stdio.h>
+int main(int argc, char **argv) {
+  printf("%d\n", (int)@1@);
+  return 0;
+}'''
+  # FIXME: fix for cross-compilation
+  if meson.is_cross_build()
+    error('Fix sys define detection for cross build')
+  endif
+  val = cc.run(templ.format(glib_inet_includes, d[0])).stdout().strip()
+  glibconfig_conf.set(d[1], val)
+endforeach
+
+glibconfig_conf.set('GLIB_USING_SYSTEM_PRINTF', true) # FIXME!
+
+# We need a more robust approach here...
+host_cpu_family = host_machine.cpu_family()
+if host_cpu_family == 'x86' or host_cpu_family == 'x86_64' or host_cpu_family == 's390' or host_cpu_family == 's390x' or host_cpu_family.startswith('arm') or host_cpu_family.startswith('crisv32') or host_cpu_family.startswith('etrax')
+  glib_memory_barrier_needed = false
+elif host_cpu_family.startswith('sparc') or host_cpu_family.startswith('alpha') or host_cpu_family.startswith('powerpc') or host_cpu_family == 'ia64'
+  glib_memory_barrier_needed = true
+else
+  # FIXME: should warn perhaps
+  glib_memory_barrier_needed = true
+endif
+glibconfig_conf.set('G_ATOMIC_OP_MEMORY_BARRIER_NEEDED', glib_memory_barrier_needed)
+
 atomictest = '''void func() {
   volatile int atomic = 2;
   __sync_bool_compare_and_swap (&atomic, 2, 3);
@@ -529,10 +663,44 @@ else
   glibconfig_conf.set('G_ATOMIC_LOCK_FREE', false)
 endif
 
-pcre = dependency('libpcre') # Should check for Unicode support, too.
-thread_lib = find_library('pthread')
+# === Threads ===
+
+# Let meson figure out all this business and whether -pthread or whatnot is needed
+# FIXME: probably needs more tweaking in meson for things like -D_REENTRANT etc.
+thread_dep = dependency('threads')
+
+# Determination of thread implementation
+if host_machine.system() == 'windows'
+  glibconfig_conf.set('g_threads_impl_def', 'WIN32')
+else
+  glibconfig_conf.set('g_threads_impl_def', 'POSIX')
+endif
+
+# FIXME: how to do this when cross-compiling?
+stack_grows_check_prog = '''
+  volatile int *a = 0, *b = 0;
+  void f (int i) {
+    volatile int x = 5;
+    if (i == 0)
+      b = &x;
+    else
+      f (i - 1);
+  }
+  int main () {
+    volatile int y = 7;
+    a = &y;
+    f (100);
+    return b > a ? 0 : 1;
+  }'''
+stack_grows_run_result = cc.run(stack_grows_check_prog, name : 'stack grows check')
+if stack_grows_run_result.compiled() and stack_grows_run_result.returncode() == 0
+  glibconfig_conf.set('G_HAVE_GROWING_STACK', 1)
+else
+  glibconfig_conf.set('G_HAVE_GROWING_STACK', 0)
+endif
+
+pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
 
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
 
 subdir('glib')
-#subdir('tests')

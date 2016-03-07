@@ -2,7 +2,7 @@ configure_file(input : 'glibconfig.h.in', output : 'glibconfig.h', configuration
 
 subdir('libcharset')
 
-if host.name() == 'windows'
+if host_machine.system() == 'windows'
   thread_src = ['gthread-win32.c']
   plat_src = []
 else
@@ -100,7 +100,7 @@ libglib = shared_library('glib',
 sources : [deprecated_sources, glib_sources, thread_src, plat_src, extra_src],
 version : glib_version,
 soversion : interface_version,
-include_dirs : inc_dirs,
+include_directories : inc_dirs,
 link_with : charset_lib,
-deps : [pcre, thread_lib],
+dependencies : [pcre, thread_dep],
 c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC'])
