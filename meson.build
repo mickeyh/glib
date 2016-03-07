@@ -117,57 +117,53 @@ if glib_conf.has('HAVE_LOCALE_H')
   endif
 endif
 
-if cc.has_member('struct stat', 'st_mtimensec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_MTIMENSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_mtim.tv_nsec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_atimensec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_ATIMENSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_atim.tv_nsec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_ctimensec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_CTIMENSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_ctim.tv_nsec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC', 1)
-endif
-
-if cc.has_member('struct stat', 'st_ctim.tv_nsec', prefix : '#include<sys/stat.h>')
-  glib_conf.set('HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC', 1)
-endif
-
-# Fixme, build properly.
-blkprefix = '''#include <sys/types.h>
+struct_stat_blkprefix = '''
+#include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_SYS_STATFS_H
 #include <sys/statfs.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
+#endif
 '''
 
-if cc.has_member('struct stat', 'blksize', prefix : blkprefix)
-  glib_conf.set('HAVE_STRUCT_STAT_BLKSIZE', 1)
-endif
-if cc.has_member('struct stat', 'st_blocks', prefix : blkprefix)
-  glib_conf.set('HAVE_STRUCT_STAT_BLOCKS', 1)
-endif
-if cc.has_member('struct stat', 'f_fstypename', prefix : blkprefix)
-  glib_conf.set('HAVE_STRUCT_STAT_F_FSTYPENAME', 1)
-endif
-if cc.has_member('struct stat', 'f_bavail', prefix : blkprefix)
-  glib_conf.set('HAVE_STRUCT_STAT_F_BAVAIL', 1)
-endif
+struct_stat_members = [
+  [ 'st_mtimensec', 'HAVE_STRUCT_STAT_ST_MTIMENSEC' ],
+  [ 'st_mtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC' ],
+  [ 'st_atimensec', 'HAVE_STRUCT_STAT_ST_ATIMENSEC' ],
+  [ 'st_atim.tv_nsec', 'HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC' ],
+  [ 'st_ctimensec', 'HAVE_STRUCT_STAT_ST_CTIMENSEC' ],
+  [ 'st_ctim.tv_nsec', 'HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC' ],
+  [ 'st_birthtime', 'HAVE_STRUCT_STAT_ST_BIRTHTIME' ],
+  [ 'st_birthtimensec', 'HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC' ],
+  [ 'st_birthtim', 'HAVE_STRUCT_STAT_ST_BIRTHTIM' ],
+  [ 'st_birthtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_BIRTHTIME_TV_NSEC' ],
+  [ 'blksize', 'HAVE_STRUCT_STAT_BLKSIZE', struct_stat_blkprefix ],
+  [ 'st_blocks', 'HAVE_STRUCT_STAT_BLOCKS', struct_stat_blkprefix ],
+  [ 'f_fstypename', 'HAVE_STRUCT_STAT_F_FSTYPENAME', struct_stat_blkprefix ],
+  [ 'f_bavail', 'HAVE_STRUCT_STAT_F_BAVAIL', struct_stat_blkprefix ],
+]
 
-# Let's configuring love
+foreach m : struct_stat_members
+  header_check_prefix = glib_conf_prefix
+  if m.length() == 3
+    header_check_prefix = header_check_prefix + m[2]
+  else
+    header_check_prefix = header_check_prefix + '#include <sys/stat.h>'
+  endif
+  if cc.has_member('struct stat', m[0], prefix : header_check_prefix)
+    glib_conf.set(m[1], 1)
+    glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(m[1])
+  endif
+endforeach
+
 char_size = cc.sizeof('char')
 short_size = cc.sizeof('short')
 int_size = cc.sizeof('int')
