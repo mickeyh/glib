@@ -70,11 +70,13 @@ glib_sources = [
 'gstrfuncs.c',
 'gstring.c',
 'gstringchunk.c',
+'gtester.c',
 'gtestutils.c',
 'gthread.c',
 'gthreadpool.c',
 'gtimer.c',
 'gtimezone.c',
+'gtranslit.c',
 'gtrashstack.c',
 'gtree.c',
 'guniprop.c',
@@ -95,6 +97,9 @@ glib_sources = [
 'gprintf.c',]
 
 extra_src = ['gspawn.c', 'giounix.c']
+
+#'gspawn-win32.c', # FIXME
+#'gspawn-win32-helper.c', # FIXME
 
 libglib = shared_library('glib',
 sources : [deprecated_sources, glib_sources, thread_src, plat_src, extra_src],
