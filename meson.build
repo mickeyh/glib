@@ -32,9 +32,9 @@ glib_conf.set('GLIB_INTERFACE_AGE', micro_version)
 glib_conf.set('GLIB_BINARY_AGE', major_version * 100 + minor_version * 10 + micro_version)
 glib_conf.set('GETTEXT_PACKAGE', '"glib20"')
 glib_conf.set('ENABLE_NLS', 1)
-glib_conf.set('HAVE_VASPRINTF', 1) # FIXME
-glib_conf.set('HAVE_VPRINTF', 1) # FIXME
 glib_conf.set('HAVE_GOOD_PRINTF', 1) # FIXME
+
+glib_conf.set('_GNU_SOURCE', 1)
 
 if run_command('xgettext', '--help').returncode() != 0
   error('GNU Gettext required currently.')
@@ -97,6 +97,7 @@ headers = [
   [ 'sys/mkdev.h', 'HAVE_SYS_MKDEV_H' ],
   [ 'sys/mount.h', 'HAVE_SYS_MOUNT_H', include_sys_param_h_if_available ],
   [ 'sys/sysctl.h', 'HAVE_SYS_SYSCTL_H', include_sys_param_h_if_available ],
+  [ 'crt_externs.h', 'HAVE_CRT_EXTERNS_H' ],
 ]
 
 foreach h : headers
@@ -164,6 +165,7 @@ foreach m : struct_stat_members
   endif
 endforeach
 
+#FIXME: maybe we should add available includes all to the glib_conf_prefix list
 # functions
 functions = [
   [ 'mmap', 'HAVE_MMAP', '#include <sys/mman.h>' ],
@@ -180,7 +182,65 @@ functions = [
   [ 'timegm', 'HAVE_TIMEGM', '#include <time.h>' ],
   [ 'gmtime_r', 'HAVE_GMTIME_R', '#include <time.h>' ],
   [ 'strerror_r', 'HAVE_STRERROR_R', '#include <string.h>' ],
+  [ 'lstat', 'HAVE_LSTAT', '''#include <sys/types.h>
+                              #include <sys/stat.h>
+                              #include <unistd.h>'''],
+  [ 'strsignal', 'HAVE_STRSIGNAL', '#include <string.h>' ],
+  [ 'vsnprintf', 'HAVE_VSNPRINTF', '#include <stdio.h>' ],
+  [ 'stpcpy', 'HAVE_STPCPY', '#include <string.h>' ],
+  [ 'strcasecmp', 'HAVE_STRCASECMP', '#include <strings.h>' ],
+  [ 'strncasecmp', 'HAVE_STRNCASECMP', '#include <strings.h>' ],
+  [ 'poll', 'HAVE_POLL', '#include <poll.h>' ],
+  [ 'vasprintf', 'HAVE_VASPRINTF', '''#define _GNU_SOURCE
+                                      #include <stdio.h>''' ],
+  [ 'setenv', 'HAVE_SETENV', '#include <stdlib.h>' ],
+  [ 'unsetenv', 'HAVE_UNSETENV', '#include <stdlib.h>' ],
+  [ 'getc_unlocked', 'HAVE_GETC_UNLOCKED', '#include <stdio.h>' ],
+  [ 'readlink', 'HAVE_READLINK', '#include <unistd.h>' ],
+  [ 'symlink', 'HAVE_SYMLINK', '#include <unistd.h>' ],
+  [ 'fdwalk', 'HAVE_FDWALK', '#include <stdlib.h>' ],
+  [ 'memmem', 'HAVE_MEMMEM', '''#define _GNU_SOURCE
+                                #include <string.h>''' ],
+  [ 'lchmod', 'HAVE_LCHMOD', '''#include <sys/stat.h>
+                                #include <unistd.h>''' ],
+  [ 'lchown', 'HAVE_LCHOWN', '#include <unistd.h>' ],
+  [ 'fchmod', 'HAVE_FCHMOD', '#include <sys/stat.h>' ],
+  [ 'fchown', 'HAVE_FCHOWN', '#include <unistd.h>' ],
+  [ 'utimes', 'HAVE_UTIMES', '#include <sys/time.h>' ],
+  [ 'getresuid', 'HAVE_GETRESUID', '''#define _GNU_SOURCE
+                                      #include <unistd.h>''' ],
+  [ 'getmntent_r', 'HAVE_GETMNTENT_R', '''#include <stdio.h>
+                                          #include <mntent.h>'''],
+  [ 'setmntent', 'HAVE_SETMNTENT', '''#include <stdio.h>
+                                      #include <mntent.h>'''],
+  [ 'endmntent', 'HAVE_ENDMNTENT', '''#include <stdio.h>
+                                      #include <mntent.h>'''],
+  [ 'hasmntopt', 'HAVE_HASMNTOPT', '''#include <stdio.h>
+                                      #include <mntent.h>'''],
+  [ 'getfsstat', 'HAVE_GETFSSTAT', '''#include <sys/param.h>
+                                      #include <sys/ucred.h>
+                                      #include <sys/mount.h''' ],
+  [ 'getvfsstat', 'HAVE_GETVFSSTAT', '''#include <sys/types.h>
+                                        #include <sys/statvfs.h>''' ],
+  [ 'fallocate', 'HAVE_FALLOCATE', '''#define _GNU_SOURCE
+                                      #include <fcntl.h>''' ],
+  [ 'localtime_r', 'HAVE_LOCALTIME_R', '#include <time.h>' ],
+  [ 'gmtime_r', 'HAVE_GMTIME_R', '#include <time.h>' ],
+  [ 'getpwuid_r', 'HAVE_GETPWUID_R', '''#include <sys/types.h>
+                                        #include <pwd.h>''' ],
+  [ 'getgrgid_r', 'HAVE_GETGRGID_R', '''#include <sys/types.h>
+                                        #include <grp.h>''' ],
+  [ 'prlimit', 'HAVE_PRLIMIT', '''#include <sys/time.h>
+                                  #include <sys/resource.h>''' ],
 ]
+
+# AIX splice is something else
+if host_machine.system() != 'aix'
+  functions += [
+    [ 'splice', 'HAVE_SPLICE', '''#define _GNU_SOURCE
+                                  #include <fcntl.h>''' ]
+  ]
+endif
 
 foreach f : functions
   header_check_prefix = glib_conf_prefix
@@ -193,6 +253,47 @@ foreach f : functions
   endif
 endforeach
 
+# Mac OS X Carbon support
+glib_have_carbon = cc.compiles('''#include <Carbon/Carbon.h>
+                                  #include <CoreServices/CoreServices.h>''',
+                               name : 'Mac OS X Carbon support')
+
+if glib_have_carbon
+  glib_conf.set('HAVE_CARBON', true)
+  CARBON_LIBS='-Wl,-framework,Carbon' # FIXME: propagate to .pc files as well
+else
+  CARBON_LIBS=''
+endif
+
+# Check for nl_langinfo and CODESET
+if cc.links('''#include <langinfo.h>
+               int main (int argc, char ** argv) {
+                 char *codeset = nl_langinfo (CODESET);
+                 return 0;
+               }''', name : 'nl_langinfo and CODESET')
+  glib_conf.set('HAVE_CODESET', true)
+endif
+
+# Check for futex(2)
+if cc.links('''#include <linux/futex.h>
+               #include <sys/syscall.h>
+               #include <unistd.h>
+               int main (int argc, char ** argv) {
+                 syscall (__NR_futex, NULL, FUTEX_WAKE, FUTEX_WAIT);
+                 return 0;
+               }''', name : 'futex(2) system call')
+  glib_conf.set('HAVE_FUTEX', true)
+endif
+
+# Check for eventfd(2)
+if cc.links('''#include <sys/eventfd.h>
+               #include <unistd.h>
+               int main (int argc, char ** argv) {
+                 eventfd (0, EFD_CLOEXEC);
+                 return 0;
+               }''', name : 'futex(2) system call')
+  glib_conf.set('HAVE_EVENTFD', true)
+endif
 
 char_size = cc.sizeof('char')
 short_size = cc.sizeof('short')
