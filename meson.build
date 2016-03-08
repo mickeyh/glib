@@ -164,6 +164,36 @@ foreach m : struct_stat_members
   endif
 endforeach
 
+# functions
+functions = [
+  [ 'mmap', 'HAVE_MMAP', '#include <sys/mman.h>' ],
+  [ 'posix_memalign', 'HAVE_POSIX_MEMALIGN', '#include <stdlib.h>' ],
+  [ 'memalign', 'HAVE_MEMALIGN', '#include <malloc.h>' ],
+  [ 'valloc', 'HAVE_VALLOC', '#include <stdlib.h>' ],
+  [ 'fsync', 'HAVE_FSYNC', '''#ifdef HAVE_UNISTD_H
+                              #include <unistd.h>
+                              #endif''' ],
+  [ 'pipe2', 'HAVE_PIPE2', '''#define _GNU_SOURCE
+                              #include <fcntl.h>
+                              #include <unistd.h>''' ],
+  [ 'issetugid', 'HAVE_ISSETUGID', '#include <unistd.h>' ],
+  [ 'timegm', 'HAVE_TIMEGM', '#include <time.h>' ],
+  [ 'gmtime_r', 'HAVE_GMTIME_R', '#include <time.h>' ],
+  [ 'strerror_r', 'HAVE_STRERROR_R', '#include <string.h>' ],
+]
+
+foreach f : functions
+  header_check_prefix = glib_conf_prefix
+  if f.length() == 3
+    header_check_prefix = header_check_prefix + f[2]
+  endif
+  if cc.has_function (f[0], prefix : header_check_prefix)
+    glib_conf.set(f[1], 1)
+    glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(f[1])
+  endif
+endforeach
+
+
 char_size = cc.sizeof('char')
 short_size = cc.sizeof('short')
 int_size = cc.sizeof('int')
@@ -605,6 +635,8 @@ else
 endif
 
 # FIXME: how to do this when cross-compiling?
+# FIXME: we should make it print the result and always return 0, so that
+# the output in meson shows up as green
 stack_grows_check_prog = '''
   volatile int *a = 0, *b = 0;
   void f (int i) {
