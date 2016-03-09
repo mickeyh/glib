@@ -295,6 +295,12 @@ if cc.links('''#include <sys/eventfd.h>
   glib_conf.set('HAVE_EVENTFD', true)
 endif
 
+if host_machine.system() == 'windows'
+  glib_conf.set('EXEEXT', '".exe"')
+else
+  glib_conf.set('EXEEXT', '""')
+endif
+
 char_size = cc.sizeof('char')
 short_size = cc.sizeof('short')
 int_size = cc.sizeof('int')
@@ -761,6 +767,7 @@ else
 endif
 
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
+libm = find_library('m')
 
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
 
