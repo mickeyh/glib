@@ -109,3 +109,5 @@ include_directories : inc_dirs,
 link_with : charset_lib,
 dependencies : [pcre, thread_dep],
 c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC'])
+
+subdir('tests')
