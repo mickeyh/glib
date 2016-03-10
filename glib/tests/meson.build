@@ -76,6 +76,11 @@ glib_tests = [
   '642026',
 ]
 
+test_env = [
+  'G_TEST_SRCDIR=' + meson.current_source_dir(),
+  'G_TEST_BUILDDIR=' + meson.current_build_dir(),
+]
+
 foreach test_name : glib_tests
   deps = [ libm, thread_dep ]
   if test_name == 'regex'
@@ -87,5 +92,17 @@ foreach test_name : glib_tests
       link_with : libglib,
       dependencies : deps,
   )
-  test(test_name, exe)
+  test(test_name, exe, env : test_env)
 endforeach
+
+c_args_atomic = [ ]
+if cc.get_id() == 'gcc'
+  c_args_atomic += [ '-Wstrict-aliasing=2' ]
+endif
+test('atomic', executable('atomic', 'atomic.c',
+                          include_directories : inc_dirs,
+                          c_args : [ '-DHAVE_CONFIG_H=1' ] + c_args_atomic,
+                          link_with : libglib,
+                          dependencies : deps),
+      env : test_env)
+

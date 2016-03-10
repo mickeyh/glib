@@ -31,6 +31,12 @@ glib_conf.set('GLIB_MICRO_VERSION', micro_version)
 glib_conf.set('GLIB_INTERFACE_AGE', micro_version)
 glib_conf.set('GLIB_BINARY_AGE', major_version * 100 + minor_version * 10 + micro_version)
 glib_conf.set('GETTEXT_PACKAGE', '"glib20"')
+glib_conf.set('PACKAGE_BUGREPORT', '"http://bugzilla.gnome.org/enter_bug.cgi?product=glib"')
+glib_conf.set('PACKAGE_NAME', '"glib"')
+glib_conf.set('PACKAGE_STRING', '"glib @0@"'.format(meson.project_version()))
+glib_conf.set('PACKAGE_TARNAME', '"glib"')
+glib_conf.set('PACKAGE_URL', '""')
+glib_conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
 glib_conf.set('ENABLE_NLS', 1)
 glib_conf.set('HAVE_GOOD_PRINTF', 1) # FIXME
 
@@ -40,12 +46,12 @@ if run_command('xgettext', '--help').returncode() != 0
   error('GNU Gettext required currently.')
 endif
 glib_conf.set('HAVE_GETTEXT', 1)
-glib_conf.set('GLIB_LOCALE_DIR', '"share/locale"')
+glib_conf.set('GLIB_LOCALE_DIR', '"@0@/share/locale"'.format(get_option('prefix')))
 
 # FIXME: what about Cygwin (G_WITH_CYGWIN)
 if host_machine.system() == 'windows'
   glib_os = '''#define G_OS_WIN32
-#define G_PLATFORM_WIN32'''
+               #define G_PLATFORM_WIN32'''
 else
   glib_os = '#define G_OS_UNIX'
 endif
@@ -59,6 +65,11 @@ include_sys_param_h_if_available = '''
 #endif'''
 
 headers = [
+  [ 'stdlib.h', 'HAVE_STDLIB_H' ],
+  [ 'string.h', 'HAVE_STRING_H' ],
+  [ 'strings.h', 'HAVE_STRINGS_H' ],
+  [ 'memory.h', 'HAVE_MEMORY_H' ],
+  [ 'alloca.h', 'HAVE_ALLOCA_H' ],
   [ 'locale.h', 'HAVE_LOCALE_H' ],
   [ 'xlocale.h', 'HAVE_XLOCALE_H' ],
   [ 'float.h', 'HAVE_FLOAT_H' ],
@@ -135,39 +146,41 @@ struct_stat_blkprefix = '''
 #endif
 '''
 
-struct_stat_members = [
-  [ 'st_mtimensec', 'HAVE_STRUCT_STAT_ST_MTIMENSEC' ],
-  [ 'st_mtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC' ],
-  [ 'st_atimensec', 'HAVE_STRUCT_STAT_ST_ATIMENSEC' ],
-  [ 'st_atim.tv_nsec', 'HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC' ],
-  [ 'st_ctimensec', 'HAVE_STRUCT_STAT_ST_CTIMENSEC' ],
-  [ 'st_ctim.tv_nsec', 'HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC' ],
-  [ 'st_birthtime', 'HAVE_STRUCT_STAT_ST_BIRTHTIME' ],
-  [ 'st_birthtimensec', 'HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC' ],
-  [ 'st_birthtim', 'HAVE_STRUCT_STAT_ST_BIRTHTIM' ],
-  [ 'st_birthtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_BIRTHTIME_TV_NSEC' ],
-  [ 'blksize', 'HAVE_STRUCT_STAT_BLKSIZE', struct_stat_blkprefix ],
-  [ 'st_blocks', 'HAVE_STRUCT_STAT_BLOCKS', struct_stat_blkprefix ],
-  [ 'f_fstypename', 'HAVE_STRUCT_STAT_F_FSTYPENAME', struct_stat_blkprefix ],
-  [ 'f_bavail', 'HAVE_STRUCT_STAT_F_BAVAIL', struct_stat_blkprefix ],
+struct_members = [
+  [ 'stat', 'st_mtimensec', 'HAVE_STRUCT_STAT_ST_MTIMENSEC' ],
+  [ 'stat', 'st_mtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC' ],
+  [ 'stat', 'st_atimensec', 'HAVE_STRUCT_STAT_ST_ATIMENSEC' ],
+  [ 'stat', 'st_atim.tv_nsec', 'HAVE_STRUCT_STAT_ST_ATIM_TV_NSEC' ],
+  [ 'stat', 'st_ctimensec', 'HAVE_STRUCT_STAT_ST_CTIMENSEC' ],
+  [ 'stat', 'st_ctim.tv_nsec', 'HAVE_STRUCT_STAT_ST_CTIM_TV_NSEC' ],
+  [ 'stat', 'st_birthtime', 'HAVE_STRUCT_STAT_ST_BIRTHTIME' ],
+  [ 'stat', 'st_birthtimensec', 'HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC' ],
+  [ 'stat', 'st_birthtim', 'HAVE_STRUCT_STAT_ST_BIRTHTIM' ],
+  [ 'stat', 'st_birthtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_BIRTHTIME_TV_NSEC' ],
+  [ 'stat', 'blksize', 'HAVE_STRUCT_STAT_BLKSIZE', struct_stat_blkprefix ],
+  [ 'stat', 'st_blocks', 'HAVE_STRUCT_STAT_BLOCKS', struct_stat_blkprefix ],
+  [ 'statfs', 'f_fstypename', 'HAVE_STRUCT_STATFS_F_FSTYPENAME', struct_stat_blkprefix ],
+  [ 'statfs', 'f_bavail', 'HAVE_STRUCT_STATFS_F_BAVAIL', struct_stat_blkprefix ],
 ]
 
-foreach m : struct_stat_members
+foreach m : struct_members
   header_check_prefix = glib_conf_prefix
-  if m.length() == 3
-    header_check_prefix = header_check_prefix + m[2]
+  if m.length() == 4
+    header_check_prefix = header_check_prefix + m[3]
   else
     header_check_prefix = header_check_prefix + '#include <sys/stat.h>'
   endif
-  if cc.has_member('struct stat', m[0], prefix : header_check_prefix)
-    glib_conf.set(m[1], 1)
-    glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(m[1])
+  if cc.has_member('struct ' + m[0], m[1], prefix : header_check_prefix)
+    glib_conf.set(m[2], 1)
+    glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(m[2])
+  else
   endif
 endforeach
 
 #FIXME: maybe we should add available includes all to the glib_conf_prefix list
 # functions
 functions = [
+  [ 'alloca', 'HAVE_ALLOCA', '#include <alloca.h>' ],
   [ 'mmap', 'HAVE_MMAP', '#include <sys/mman.h>' ],
   [ 'posix_memalign', 'HAVE_POSIX_MEMALIGN', '#include <stdlib.h>' ],
   [ 'memalign', 'HAVE_MEMALIGN', '#include <malloc.h>' ],
@@ -230,9 +243,47 @@ functions = [
                                         #include <pwd.h>''' ],
   [ 'getgrgid_r', 'HAVE_GETGRGID_R', '''#include <sys/types.h>
                                         #include <grp.h>''' ],
-  [ 'prlimit', 'HAVE_PRLIMIT', '''#include <sys/time.h>
+  [ 'prlimit', 'HAVE_PRLIMIT', '''#define _GNU_SOURCE
+                                  #include <sys/time.h>
                                   #include <sys/resource.h>''' ],
+  [ 'snprintf', 'HAVE_SNPRINTF', '#include <stdio.h>' ],
+  [ 'strnlen', 'HAVE_STRNLEN', '#include <string.h>' ],
+  [ 'wcslen', 'HAVE_WCSLEN', '#include <wchar.h>' ],
+  [ 'wcsnlen', 'HAVE_WCSNLEN', '#include <wchar.h>' ],
+  [ 'mbrtowc', 'HAVE_MBRTOWC', '#include <wchar.h>' ],
+  [ 'wcrtomb', 'HAVE_WCRTOMB', '#include <wchar.h>' ],
+  [ 'newlocale', 'HAVE_NEWLOCALE', '#include <locale.h>' ],
+  [ 'uselocale', 'HAVE_USELOCALE', '#include <locale.h>' ],
+  [ 'strtod_l', 'HAVE_STRTOD_L', '''#define _GNU_SOURCE
+                                    #include <stdlib.h>
+                                    #ifdef HAVE_XLOCALE_H
+                                    #include <xlocale.h>
+                                    #endif''' ],
+  [ 'strtoll_l', 'HAVE_STRTOLL_L', '''#define _GNU_SOURCE
+                                      #include <stdlib.h>
+                                      #include <limits.h>
+                                      #ifdef HAVE_XLOCALE_H
+                                      #include <xlocale.h>
+                                      #endif''' ],
+  [ 'strtoull_l', 'HAVE_STRTOULL_L', '''#define _GNU_SOURCE
+                                        #include <stdlib.h>
+                                        #include <limits.h>
+                                        #ifdef HAVE_XLOCALE_H
+                                        #include <xlocale.h>
+                                        #endif''' ],
 ]
+
+if glib_conf.has('HAVE_SYS_STATVFS_H')
+  functions += [ [ 'statvfs', 'HAVE_STATVFS', '#include <sys/statvfs.h>'] ]
+endif
+if glib_conf.has('HAVE_SYS_STATFS_H') or glib_conf.has('HAVE_SYS_MOUNT_H')
+  functions += [ [ 'statfs', 'HAVE_STATFS', '''#ifdef HAVE_SYS_STATFS_H
+                                               #include <sys/statfs.h>
+                                               #endif
+                                               #ifdef HAVE_SYS_MOUNT_H
+                                               #include <sys/mount.h>
+                                               #endif'''] ]
+endif
 
 # AIX splice is something else
 if host_machine.system() != 'aix'
@@ -250,8 +301,33 @@ foreach f : functions
   if cc.has_function (f[0], prefix : header_check_prefix)
     glib_conf.set(f[1], 1)
     glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(f[1])
+    set_variable('have_func_' + f[0], true)
+  else
+    set_variable('have_func_' + f[0], false)
   endif
 endforeach
+
+# Check whether to use statfs or statvfs
+# Some systems have both statfs and statvfs, pick the most "native" for these
+if have_func_statfs and have_func_statvfs
+  # on solaris and irix, statfs doesn't even have the f_bavail field
+  if not glib_conf.has('HAVE_STRUCT_STATFS_F_BAVAIL')
+    have_func_statfs = false
+  else
+    # at least on linux, statfs is the actual syscall
+    have_func_statvfs = false
+  endif
+endif
+if have_func_statfs
+  glib_conf.set('USE_STATFS', 1)
+  stat_func_to_use = 'statfs'
+elif have_func_statvfs
+  glib_conf.set('USE_STATVFS', 1)
+  stat_func_to_use = 'statvfs'
+else
+  stat_func_to_use = 'neither'
+endif
+message('Checking whether to use statfs or statvfs .. ' + stat_func_to_use)
 
 # Mac OS X Carbon support
 glib_have_carbon = cc.compiles('''#include <Carbon/Carbon.h>
@@ -271,7 +347,7 @@ if cc.links('''#include <langinfo.h>
                  char *codeset = nl_langinfo (CODESET);
                  return 0;
                }''', name : 'nl_langinfo and CODESET')
-  glib_conf.set('HAVE_CODESET', true)
+  glib_conf.set('HAVE_CODESET', 1)
 endif
 
 # Check for futex(2)
@@ -282,7 +358,7 @@ if cc.links('''#include <linux/futex.h>
                  syscall (__NR_futex, NULL, FUTEX_WAKE, FUTEX_WAIT);
                  return 0;
                }''', name : 'futex(2) system call')
-  glib_conf.set('HAVE_FUTEX', true)
+  glib_conf.set('HAVE_FUTEX', 1)
 endif
 
 # Check for eventfd(2)
@@ -292,7 +368,121 @@ if cc.links('''#include <sys/eventfd.h>
                  eventfd (0, EFD_CLOEXEC);
                  return 0;
                }''', name : 'futex(2) system call')
-  glib_conf.set('HAVE_EVENTFD', true)
+  glib_conf.set('HAVE_EVENTFD', 1)
+endif
+
+clock_gettime_test_code = '''
+  #include <time.h>
+  struct timespec t;
+  int main (int argc, char ** argv) {
+    return clock_gettime(CLOCK_REALTIME, &t);
+  }'''
+# FIXME: or will librt be in the meson threads dep already?
+librt = [ ]
+if cc.links(clock_gettime_test_code, name : 'clock_gettime')
+  glib_conf.set('HAVE_CLOCK_GETTIME', 1)
+elif cc.links(clock_gettime_test_code, args : '-lrt', name : 'clock_gettime in librt')
+  glib_conf.set('HAVE_CLOCK_GETTIME', 1)
+  librt = find_library('rt')
+endif
+
+# Check whether there is a vsnprintf() function with C99 semantics installed.
+# AC_FUNC_VSNPRINTF_C99
+# Check whether there is a snprintf() function with C99 semantics installed.
+# AC_FUNC_SNPRINTF_C99
+if host_machine.system() == 'windows' and cc.get_id() == 'gcc' # FIXME: is it mingw on windows?
+  # Unfortunately the mingw implementations of C99-style snprintf and vsnprintf
+  # don't seem to be quite good enough, at least not in mingw-runtime-3.14.
+  # (Sorry, I don't know exactly what is the problem, but it is related to
+  # floating point formatting and decimal point vs. comma.)
+  # The simple tests in AC_FUNC_VSNPRINTF_C99 and AC_FUNC_SNPRINTF_C99 aren't
+  # rigorous enough to notice, though.
+  glib_conf.set('HAVE_C99_SNPRINTF', false)
+  glib_conf.set('HAVE_C99_VSNPRINTF', false)
+else
+  vsnprintf_c99_test_code = '''
+#include <stdio.h>
+#include <stdarg.h>
+
+int
+doit(char * s, ...)
+{
+  char buffer[32];
+  va_list args;
+  int r;
+
+  va_start(args, s);
+  r = vsnprintf(buffer, 5, s, args);
+  va_end(args);
+
+  if (r != 7)
+    exit(1);
+
+  /* AIX 5.1 and Solaris seems to have a half-baked vsnprintf()
+     implementation. The above will return 7 but if you replace
+     the size of the buffer with 0, it borks! */
+  va_start(args, s);
+  r = vsnprintf(buffer, 0, s, args);
+  va_end(args);
+
+  if (r != 7)
+    exit(1);
+
+  exit(0);
+}
+
+int
+main(void)
+{
+  doit("1234567");
+  exit(1);
+}'''
+
+  rres = cc.run(vsnprintf_c99_test_code, name : 'C99 vsnprintf')
+  if rres.compiled() and rres.returncode() == 0
+    glib_conf.set('HAVE_C99_VSNPRINTF', 1)
+  endif
+
+  snprintf_c99_test_code = '''
+#include <stdio.h>
+#include <stdarg.h>
+
+int
+doit()
+{
+  char buffer[32];
+  va_list args;
+  int r;
+
+  r = snprintf(buffer, 5, "1234567");
+
+  if (r != 7)
+    exit(1);
+
+  r = snprintf(buffer, 0, "1234567");
+
+  if (r != 7)
+    exit(1);
+
+  r = snprintf(NULL, 0, "1234567");
+
+  if (r != 7)
+    exit(1);
+
+  exit(0);
+}
+
+int
+main(void)
+{
+  doit();
+  exit(1);
+}'''
+
+  rres = cc.run(snprintf_c99_test_code, name : 'C99 snprintf')
+  if rres.compiled() and rres.returncode() == 0
+    glib_conf.set('HAVE_C99_SNPRINTF', 1)
+  endif
 endif
 
 if host_machine.system() == 'windows'
@@ -301,12 +491,132 @@ else
   glib_conf.set('EXEEXT', '""')
 endif
 
+# Check whether the printf() family supports Unix98 %n$ positional parameters 
+# AC_FUNC_PRINTF_UNIX98
+printf_unix98_test_code = '''
+#include <stdio.h>
+
+int
+main (void)
+{
+  char buffer[128];
+
+  sprintf (buffer, "%2\$d %3\$d %1\$d", 1, 2, 3);
+  if (strcmp ("2 3 1", buffer) == 0)
+    exit (0);
+  exit (1);
+}'''
+rres = cc.run(printf_unix98_test_code, name : 'printf unix98 position parameters')
+if rres.compiled() and rres.returncode() == 0
+  glib_conf.set('HAVE_UNIX98_PRINTF', 1)
+endif
+
+# Check if C compiler supports the 'signed' keyword
+if not cc.compiles('''signed char x;''', name : 'signed')
+  glib_conf.set('signed', '/* NOOP */')
+endif
+
+# Check if the ptrdiff_t type exists
+if cc.compiles('''#include <stddef.h>
+                  ptrdiff_t x;''', name : 'ptrdiff_t')
+  glib_conf.set('HAVE_PTRDIFF_T', 1)
+endif
+
+# Check for sig_atomic_t type
+if cc.links('''#include <signal.h>
+               #include <sys/types.h>
+               sig_atomic_t val = 42;
+               int main (int argc, char ** argv) {
+                 return val == 42 ? 0 : 1;
+               }''', name : 'sig_atomic_t')
+  glib_conf.set('HAVE_SIG_ATOMIC_T', 1)
+endif
+
+# Check if 'long long' works.
+# jm_AC_TYPE_LONG_LONG
+if cc.compiles('''long long ll = 1LL;
+                  int i = 63;
+                  int some_func (void) {
+                    long long llmax = (long long) -1;
+                    return ll << i | ll >> i | llmax / ll | llmax % ll;
+                  }''', name : 'long long')
+  glib_conf.set('HAVE_LONG_LONG', 1)
+  have_long_long = true
+else
+  have_long_long = false
+endif
+
+# Test whether the compiler supports the 'long double' type.
+if cc.compiles('''/* The Stardent Vistra knows sizeof(long double), but does not support it.  */
+                  long double foo = 0.0;
+                  /* On Ultrix 4.3 cc, long double is 4 and double is 8.  */
+                  int array [2*(sizeof(long double) >= sizeof(double)) - 1];''',
+               name : 'long double')
+  glib_conf.set('HAVE_LONG_DOUBLE', 1)
+endif
+
+#dnl Test whether <stddef.h> has the 'wchar_t' type.
+if cc.compiles('''#include <stddef.h>
+                  wchar_t foo = (wchar_t)'\0';''',
+               name : 'wchar_t')
+  glib_conf.set('HAVE_WCHAR_T', 1)
+endif
+
+# Test whether <wchar.h> has the 'wint_t' type.
+if cc.compiles('''#include <wchar.h>
+                  wint_t foo = (wchar_t)'\0';''',
+               name : 'wint_t')
+  glib_conf.set('HAVE_WINT_T', 1)
+endif
+
+found_uintmax_t = false
+
+# Define HAVE_INTTYPES_H_WITH_UINTMAX if <inttypes.h> exists,
+# doesn't clash with <sys/types.h>, and declares uintmax_t.
+# jm_AC_HEADER_INTTYPES_H
+if cc.compiles('''#include <sys/types.h>
+                  #include <inttypes.h>
+                  void some_func (void) {
+                    uintmax_t i = (uintmax_t) -1;
+                  }''', name : 'uintmax_t in inttypes.h')
+  glib_conf.set('HAVE_INTTYPES_H_WITH_UINTMAX', 1)
+  found_uintmax_t = true
+endif
+
+# Define HAVE_STDINT_H_WITH_UINTMAX if <stdint.h> exists,
+# doesn't clash with <sys/types.h>, and declares uintmax_t.
+# jm_AC_HEADER_STDINT_H
+if cc.compiles('''#include <sys/types.h>
+                  #include <stdint.h>
+                  void some_func (void) {
+                    uintmax_t i = (uintmax_t) -1;
+                  }''', name : 'uintmax_t in stdint.h')
+  glib_conf.set('HAVE_STDINT_H_WITH_UINTMAX', 1)
+  found_uintmax_t = true
+endif
+
+# Define intmax_t to 'long' or 'long long'
+# if it is not already defined in <stdint.h> or <inttypes.h>.
+# For simplicity, we assume that a header file defines 'intmax_t' if and
+# only if it defines 'uintmax_t'.
+if found_uintmax_t
+  glib_conf.set('HAVE_INTMAX_T', 1)
+elif have_long_long
+  glib_conf.set('intmax_t', 'long long')
+else
+  glib_conf.set('intmax_t', 'long')
+endif
+
 char_size = cc.sizeof('char')
 short_size = cc.sizeof('short')
 int_size = cc.sizeof('int')
 voidp_size = cc.sizeof('void*')
 long_size = cc.sizeof('long')
-long_long_size = cc.sizeof('long long')
+if have_long_long
+  long_long_size = cc.sizeof('long long')
+else
+  long_long_size = 0
+endif
 sizet_size = cc.sizeof('size_t')
 ssizet_size = cc.sizeof('ssize_t')
 
@@ -315,7 +625,6 @@ short_align = cc.alignment('short')
 int_align = cc.alignment('int')
 voidp_align = cc.alignment('void*')
 long_align = cc.alignment('long')
-long_long_align = cc.alignment('long long')
 sizet_align = cc.alignment('size_t')
 
 glib_conf.set('ALIGNOF_UNSIGNED_LONG', long_align)
@@ -420,16 +729,6 @@ if host_machine.system() == 'windows'
   else
     glibconfig_conf.set('g_pollfd_format', '"%#x"')
   endif
-  # FIXME:
-  # Unfortunately the mingw implementations of C99-style snprintf and vsnprintf
-  # don't seem to be quite good enough, at least not in mingw-runtime-3.14.
-  # (Sorry, I don't know exactly what is the problem, but it is related to
-  # floating point formatting and decimal point vs. comma.)
-  # The simple tests in AC_FUNC_VSNPRINTF_C99 and AC_FUNC_SNPRINTF_C99 aren't
-  # rigorous enough to notice, though.
-  # So preset the autoconf cache variables.
-  #ac_cv_func_vsnprintf_c99=no
-  #ac_cv_func_snprintf_c99=no
 else
   glibconfig_conf.set('g_pid_type', 'int')
   glibconfig_conf.set('g_pollfd_format', '"%d"')
@@ -766,8 +1065,38 @@ else
   glibconfig_conf.set('G_HAVE_GROWING_STACK', 0)
 endif
 
+# Tests for iconv
+# USE_LIBICONV_GNU: Using GNU libiconv
+# USE_LIBICONV_NATIVE: Using a native implementation of iconv in a separate library
+# On Windows we use a native implementation
+if host_machine.system() == 'windows'
+  glib_conf.set('USE_LIBICONV_NATIVE', true)
+  libiconv = find_library('iconv')
+else
+  # FIXME: add option as well
+  if cc.has_function('iconv_open', prefix : '#include <iconv.h>', name : 'C library iconv')
+    libiconv = [ ]
+  # FIXME: this is all wrong, meson needs a more intuitive check for this, like cc.has_lib_function() or such
+  elif cc.compiles('''#include <iconv.h>
+                      void somefunc (void) {
+                        libiconv_open("foo", "bar")
+                      }''', args : '-liconv', name : 'GNU libiconv')
+    glib_conf.set('USE_LIBICONV_GNU', true)
+    libiconv = find_library('iconv')
+  elif cc.compiles('''#include <iconv.h>
+                      void somefunc (void) {
+                        iconv_open("foo", "bar")
+                      }''', args : '-liconv', name : 'other libiconv')
+    glib_conf.set('USE_LIBICONV_NATIVE', true)
+    libiconv = find_library('iconv')
+  else
+    error('No iconv() implementation found in C library or libiconv')
+  endif
+endif
+
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
 libm = find_library('m')
+#libffi_dep = dependency('libffi', version : '>= 3.0.0')
 
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
 

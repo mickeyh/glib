@@ -107,7 +107,7 @@ version : glib_version,
 soversion : interface_version,
 include_directories : inc_dirs,
 link_with : charset_lib,
-dependencies : [pcre, thread_dep],
+dependencies : [ pcre, thread_dep, libiconv, librt ],
 c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC'])
 
 subdir('tests')
