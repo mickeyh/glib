@@ -157,10 +157,12 @@ struct_members = [
   [ 'stat', 'st_birthtimensec', 'HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC' ],
   [ 'stat', 'st_birthtim', 'HAVE_STRUCT_STAT_ST_BIRTHTIM' ],
   [ 'stat', 'st_birthtim.tv_nsec', 'HAVE_STRUCT_STAT_ST_BIRTHTIME_TV_NSEC' ],
-  [ 'stat', 'blksize', 'HAVE_STRUCT_STAT_BLKSIZE', struct_stat_blkprefix ],
-  [ 'stat', 'st_blocks', 'HAVE_STRUCT_STAT_BLOCKS', struct_stat_blkprefix ],
+  [ 'stat', 'st_blksize', 'HAVE_STRUCT_STAT_ST_BLKSIZE', struct_stat_blkprefix ],
+  [ 'stat', 'st_blocks', 'HAVE_STRUCT_STAT_ST_BLOCKS', struct_stat_blkprefix ],
   [ 'statfs', 'f_fstypename', 'HAVE_STRUCT_STATFS_F_FSTYPENAME', struct_stat_blkprefix ],
   [ 'statfs', 'f_bavail', 'HAVE_STRUCT_STATFS_F_BAVAIL', struct_stat_blkprefix ],
+  [ 'dirent', 'd_type', 'HAVE_STRUCT_DIRENT_D_TYPE', '''#include <sys/types.h>
+                                                        #include <dirent.h>''' ],
 ]
 
 foreach m : struct_members
@@ -347,7 +349,7 @@ if cc.links('''#include <langinfo.h>
                  char *codeset = nl_langinfo (CODESET);
                  return 0;
                }''', name : 'nl_langinfo and CODESET')
-  glib_conf.set('HAVE_CODESET', 1)
+  glib_conf.set('HAVE_LANGINFO_CODESET', 1)
 endif
 
 # Check for futex(2)
@@ -367,7 +369,7 @@ if cc.links('''#include <sys/eventfd.h>
                int main (int argc, char ** argv) {
                  eventfd (0, EFD_CLOEXEC);
                  return 0;
-               }''', name : 'futex(2) system call')
+               }''', name : 'eventfd(2) system call')
   glib_conf.set('HAVE_EVENTFD', 1)
 endif
 
@@ -384,6 +386,62 @@ if cc.links(clock_gettime_test_code, name : 'clock_gettime')
 elif cc.links(clock_gettime_test_code, args : '-lrt', name : 'clock_gettime in librt')
   glib_conf.set('HAVE_CLOCK_GETTIME', 1)
   librt = find_library('rt')
+endif
+
+# if statfs() takes 2 arguments (Posix) or 4 (Solaris)
+if have_func_statfs
+  if cc.compiles(glib_conf_prefix + '''
+                 #include <unistd.h>
+                        #ifdef HAVE_SYS_PARAM_H
+                        #include <sys/param.h>
+                        #endif
+                        #ifdef HAVE_SYS_VFS_H
+                        #include <sys/vfs.h>
+                        #endif
+                        #ifdef HAVE_SYS_MOUNT_H
+                        #include <sys/mount.h>
+                        #endif
+                        #ifdef HAVE_SYS_STATFS_H
+                        #include <sys/statfs.h>
+                        #endif
+                        void some_func (void) {
+                          struct statfs st;
+                          statfs(NULL, &st);
+                        }''', name : 'number of arguments to statfs() (n=2)')
+    glib_conf.set('STATFS_ARGS', 2)
+  elif cc.compiles(glib_conf_prefix + '''
+                   #include <unistd.h>
+                          #ifdef HAVE_SYS_PARAM_H
+                          #include <sys/param.h>
+                          #endif
+                          #ifdef HAVE_SYS_VFS_H
+                          #include <sys/vfs.h>
+                          #endif
+                          #ifdef HAVE_SYS_MOUNT_H
+                          #include <sys/mount.h>
+                          #endif
+                          #ifdef HAVE_SYS_STATFS_H
+                          #include <sys/statfs.h>
+                          #endif
+                          void some_func (void) {
+                            struct statfs st;
+                            statfs(NULL, &st, sizeof (st), 0);
+                          }''', name : 'number of arguments to statfs() (n=4)')
+    glib_conf.set('STATFS_ARGS', 4)
+  else
+    error('Unable to determine number of arguments to statfs()')
+  endif
+endif
+
+# open takes O_DIRECTORY as an option
+#AC_MSG_CHECKING([])
+if cc.compiles('''#include <fcntl.h>
+                  #include <sys/types.h>
+                  #include <sys/stat.h>],
+                  void some_func (void) {
+                    open(0, O_DIRECTORY, 0);
+                  }''', name : 'open() option O_DIRECTORY')
+  glib_conf.set('HAVE_OPEN_O_DIRECTORY', 1)
 endif
 
 # Check whether there is a vsnprintf() function with C99 semantics installed.
@@ -509,6 +567,50 @@ main (void)
 rres = cc.run(printf_unix98_test_code, name : 'printf unix98 position parameters')
 if rres.compiled() and rres.returncode() == 0
   glib_conf.set('HAVE_UNIX98_PRINTF', 1)
+endif
+
+# Check for nl_langinfo and CODESET
+if cc.links('''#include <langinfo.h>
+               int main (int argc, char ** argv) {
+                 char *codeset = nl_langinfo (CODESET);
+                 return 0;
+               }''', name : 'nl_langinfo (CODESET)')
+  glib_conf.set('HAVE_CODESET', 1)
+endif
+
+# Check for nl_langinfo and LC_TIME parts that are needed in gdatetime.c
+if cc.links('''#include <langinfo.h>
+               int main (int argc, char ** argv) {
+                 char *str;
+                 str = nl_langinfo (PM_STR);
+                 str = nl_langinfo (D_T_FMT);
+                 str = nl_langinfo (D_FMT);
+                 str = nl_langinfo (T_FMT);
+                 str = nl_langinfo (T_FMT_AMPM);
+                 str = nl_langinfo (MON_1);
+                 str = nl_langinfo (ABMON_12);
+                 str = nl_langinfo (DAY_1);
+                 str = nl_langinfo (ABDAY_7);
+                 return 0;
+               }''', name : 'nl_langinfo (PM_STR)')
+  glib_conf.set('HAVE_LANGINFO_TIME', 1)
+endif
+if cc.links('''#include <langinfo.h>
+               int main (int argc, char ** argv) {
+                 char *str;
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT0_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT1_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT2_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT3_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT4_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT5_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT6_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT7_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT8_MB);
+                 str = nl_langinfo (_NL_CTYPE_OUTDIGIT9_MB);
+                 return 0;
+               }''', name : 'nl_langinfo (_NL_CTYPE_OUTDIGITn_MB)')
+  glib_conf.set('HAVE_LANGINFO_OUTDIGIT', 1)
 endif
 
 # Check if C compiler supports the 'signed' keyword
@@ -1036,8 +1138,10 @@ thread_dep = dependency('threads')
 # Determination of thread implementation
 if host_machine.system() == 'windows'
   glibconfig_conf.set('g_threads_impl_def', 'WIN32')
+  glib_conf.set('THREADS_WIN32', 1)
 else
   glibconfig_conf.set('g_threads_impl_def', 'POSIX')
+  glib_conf.set('THREADS_POSIX', 1)
 endif
 
 # FIXME: how to do this when cross-compiling?
@@ -1095,8 +1199,18 @@ else
 endif
 
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
+glib_conf.set('USE_SYSTEM_PCRE', '/**/')
+
 libm = find_library('m')
 #libffi_dep = dependency('libffi', version : '>= 3.0.0')
+
+# FIXME: defines in config.h that are not actually used anywhere
+# (we add them for now to minimise the diff)
+glib_conf.set('HAVE_DLFCN_H', 1)
+glib_conf.set('__EXTENSIONS__', 1)
+glib_conf.set('STDC_HEADERS', 1)
+# THREADS_NONE
+glib_conf.set('SIZEOF___INT64', 0)
 
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
 
