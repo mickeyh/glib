@@ -27,6 +27,7 @@ gobject_install_headers = [
   'gvaluetypes.h',
   'gobjectnotifyqueue.c', # sic
 ]
+install_headers(gobject_install_headers, subdir : 'glib-2.0/gobject/')
 
 gobject_c_sources = [
 #  'gobject_probes.d',
@@ -55,6 +56,7 @@ libgobject = shared_library('gobject',
 sources : [ gobject_c_sources ],
 version : glib_version,
 soversion : interface_version,
+install : true,
 include_directories : inc_dirs,
 link_with : libglib,
 dependencies : libffi_dep,
