@@ -39,7 +39,6 @@ glib_tests = [
   'option-context',
   'option-argv0',
   'overflow',
-#  'overflow-fallback', # FIXME
   'pattern',
   'private',
   'protocol',
@@ -76,6 +75,14 @@ glib_tests = [
   '642026',
 ]
 
+if host_machine.system() != 'windows'
+  glib_tests += [ 'unix', 'include' ]
+endif
+
+if cc.get_id() == 'gcc'
+  glib_tests += [ 'autoptr' ]
+endif
+
 test_env = [
   'G_TEST_SRCDIR=' + meson.current_source_dir(),
   'G_TEST_BUILDDIR=' + meson.current_build_dir(),
@@ -99,12 +106,49 @@ c_args_atomic = [ ]
 if cc.get_id() == 'gcc'
   c_args_atomic += [ '-Wstrict-aliasing=2' ]
 endif
-test('atomic', executable('atomic', 'atomic.c',
-                          include_directories : inc_dirs,
-                          c_args : [ '-DHAVE_CONFIG_H=1' ] + c_args_atomic,
-                          link_with : libglib,
-                          dependencies : deps),
-      env : test_env)
+
+exe = executable('atomic', 'atomic.c',
+  include_directories : inc_dirs,
+  c_args : [ '-DHAVE_CONFIG_H=1' ] + c_args_atomic,
+  link_with : libglib,
+  dependencies : deps,
+)
+test('atomic', exe, env : test_env)
+
+# FIXME: consolidate all of these into the array
+exe = executable('overflow-fallback', 'overflow.c',
+  include_directories : inc_dirs,
+  c_args : [ '-DHAVE_CONFIG_H=1', '-D_GLIB_TEST_OVERFLOW_FALLBACK' ],
+  link_with : libglib,
+  dependencies : deps,
+)
+test('overflow-fallback', exe, env : test_env)
+
+exe = executable('642026-ec', '642026.c',
+  include_directories : inc_dirs,
+  c_args : [ '-DHAVE_CONFIG_H=1', '-DG_ERRORCHECK_MUTEXES' ],
+  link_with : libglib,
+  dependencies : deps,
+)
+test('642026-ec', exe, env : test_env)
+
+exe = executable('1bit-emufutex', '1bit-mutex.c',
+  include_directories : inc_dirs,
+  c_args : [ '-DHAVE_CONFIG_H=1', '-DTEST_EMULATED_FUTEX' ],
+  link_with : libglib,
+  dependencies : deps,
+)
+test('1bit-emufutex', exe, env : test_env)
+
+if glib_conf.has('HAVE_EVENTFD')
+  exe = executable('gwakeup-fallback', 'gwakeuptest.c', '../gwakeup.c',
+    include_directories : inc_dirs,
+    c_args : [ '-DHAVE_CONFIG_H=1', '-DTEST_EVENTFD_FALLBACK' ],
+    link_with : libglib,
+    dependencies : deps,
+  )
+  test('gwakeup-fallback', exe, env : test_env)
+endif
 
 # test-spawn-echo helper binary required by the spawn tests
 executable('test-spawn-echo', 'test-spawn-echo.c',
