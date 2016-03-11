@@ -1216,3 +1216,4 @@ configure_file(input : 'config.h.meson', output : 'config.h', configuration : gl
 
 subdir('glib')
 subdir('gobject')
+subdir('gthread')
