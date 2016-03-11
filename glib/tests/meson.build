@@ -88,7 +88,7 @@ foreach test_name : glib_tests
   endif
   exe = executable(test_name, '@0@.c'.format(test_name),
       include_directories : inc_dirs,
-      c_args : [ '-DHAVE_CONFIG_H=1' ],
+      c_args : [ '-DHAVE_CONFIG_H=1', '-DG_LOG_DOMAIN="GLib"' ],
       link_with : libglib,
       dependencies : deps,
   )
@@ -106,3 +106,10 @@ test('atomic', executable('atomic', 'atomic.c',
                           dependencies : deps),
       env : test_env)
 
+# test-spawn-echo helper binary required by the spawn tests
+executable('test-spawn-echo', 'test-spawn-echo.c',
+           include_directories : inc_dirs,
+           c_args : [ '-DHAVE_CONFIG_H=1', '-DG_LOG_DOMAIN="GLib"' ],
+           link_with : libglib,
+           dependencies : deps,
+)
