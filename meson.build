@@ -1202,7 +1202,7 @@ pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
 glib_conf.set('USE_SYSTEM_PCRE', '/**/')
 
 libm = find_library('m')
-#libffi_dep = dependency('libffi', version : '>= 3.0.0')
+libffi_dep = dependency('libffi', version : '>= 3.0.0')
 
 # FIXME: defines in config.h that are not actually used anywhere
 # (we add them for now to minimise the diff)
@@ -1215,3 +1215,4 @@ glib_conf.set('SIZEOF___INT64', 0)
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
 
 subdir('glib')
+subdir('gobject')
