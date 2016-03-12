@@ -1,9 +1,5 @@
 gmoduleconf_conf = configuration_data()
 
-G_MODULE_NEED_USCORE=0
-G_MODULE_BROKEN_RTLD_GLOBAL=0
-G_MODULE_HAVE_DLERROR=0
-
 g_module_need_uscore = 0
 g_module_broken_rtld_global = 0
 g_module_have_dlerror = 0
@@ -59,9 +55,9 @@ if g_module_impl == 'G_MODULE_IMPL_DL'
     endif
   endif
 
-  g_module_have_dlerror = cc.has_function('dlerror',
-                                          prefix : '#include <dlfcn.h>',
-                                          name : 'dlerror')
+  if cc.has_function('dlerror', prefix : '#include <dlfcn.h>', name : 'dlerror')
+    g_module_have_dlerror = 1
+  endif
 endif
 
 # Done, have we got an implementation?
