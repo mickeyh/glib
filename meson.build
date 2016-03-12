@@ -109,6 +109,9 @@ headers = [
   [ 'sys/mount.h', 'HAVE_SYS_MOUNT_H', include_sys_param_h_if_available ],
   [ 'sys/sysctl.h', 'HAVE_SYS_SYSCTL_H', include_sys_param_h_if_available ],
   [ 'crt_externs.h', 'HAVE_CRT_EXTERNS_H' ],
+  [ 'linux/netlink.h', 'HAVE_NETLINK', '#include <sys/socket.h>' ],
+  [ 'sys/inotify.h', 'HAVE_SYS_INOTIFY_H' ],
+  [ 'sys/event.h', 'HAVE_SYS_EVENT_H' ],
 ]
 
 foreach h : headers
@@ -273,6 +276,9 @@ functions = [
                                         #ifdef HAVE_XLOCALE_H
                                         #include <xlocale.h>
                                         #endif''' ],
+  [ 'inotify_init1', 'HAVE_INOTIFY_INIT1', '#include <sys/inotify.h>' ],
+  [ 'kqueue', 'HAVE_KQUEUE', '#include <sys/event.h>' ],
+  [ 'kevent', 'HAVE_KEVENT', '#include <sys/event.h>' ],
 ]
 
 if glib_conf.has('HAVE_SYS_STATVFS_H')
@@ -1203,6 +1209,7 @@ glib_conf.set('USE_SYSTEM_PCRE', '/**/')
 
 libm = find_library('m')
 libffi_dep = dependency('libffi', version : '>= 3.0.0')
+libz_dep = dependency('zlib')
 
 # FIXME: defines in config.h that are not actually used anywhere
 # (we add them for now to minimise the diff)
@@ -1212,9 +1219,11 @@ glib_conf.set('STDC_HEADERS', 1)
 # THREADS_NONE
 glib_conf.set('SIZEOF___INT64', 0)
 
-configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
-
 subdir('glib')
 subdir('gobject')
 subdir('gthread')
 subdir('gmodule')
+subdir('gio')
+
+configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
+
