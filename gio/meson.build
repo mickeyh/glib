@@ -799,4 +799,4 @@ executable('gresource', 'gresource-tool.c',
   dependencies : libelf,
 )
 
-#subdir('tests')
+subdir('tests')
