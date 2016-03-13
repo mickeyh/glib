@@ -89,7 +89,7 @@ if host_machine.system() != 'windows'
   if cc.compiles('''#include <netinet/in.h>
                     struct ip_mreqn foo;''',
                  name : 'struct ip_mreqn')
-    glib_conf.set('HAVE_IP_MREQN', 1)
+    glib_conf.set('HAVE_IP_MREQN', '/**/')
   endif
 endif
 

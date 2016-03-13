@@ -16,7 +16,7 @@ micro_version = 6
 interface_version = 2 # FIXME
 
 glib_version = meson.project_version()
-inc_dirs = include_directories('.', 'glib', 'gmodule')
+inc_dirs = include_directories('.', 'glib', 'gmodule', 'gio')
 
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
@@ -279,6 +279,14 @@ functions = [
   [ 'inotify_init1', 'HAVE_INOTIFY_INIT1', '#include <sys/inotify.h>' ],
   [ 'kqueue', 'HAVE_KQUEUE', '#include <sys/event.h>' ],
   [ 'kevent', 'HAVE_KEVENT', '#include <sys/event.h>' ],
+  [ 'getservent', 'HAVE_GETSERVENT', '#include <netdb.h>' ],
+  [ 'getprotobyname_r', 'HAVE_GETPROTOBYNAME_R', '#include <netdb.h>' ],
+  [ 'if_indextoname', 'HAVE_IF_INDEXTONAME', '#include <net/if.h>' ],
+  [ 'if_nametoindex', 'HAVE_IF_NAMETOINDEX', '#include <net/if.h>' ],
+  [ 'sendmmsg', 'HAVE_SENDMMSG', '''#define _GNU_SOURCE
+                                    #include <sys/socket.h>''' ],
+  [ 'recvmmsg', 'HAVE_RECVMMSG', '''#define _GNU_SOURCE
+                                    #include <sys/socket.h>''' ],
 ]
 
 if glib_conf.has('HAVE_SYS_STATVFS_H')
