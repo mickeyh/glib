@@ -98,6 +98,7 @@ foreach test_name : glib_tests
       c_args : [ '-DHAVE_CONFIG_H=1', '-DG_LOG_DOMAIN="GLib"' ],
       link_with : libglib,
       dependencies : deps,
+      install : false,
   )
   test(test_name, exe, env : test_env)
 endforeach
@@ -121,6 +122,7 @@ exe = executable('overflow-fallback', 'overflow.c',
   c_args : [ '-DHAVE_CONFIG_H=1', '-D_GLIB_TEST_OVERFLOW_FALLBACK' ],
   link_with : libglib,
   dependencies : deps,
+  install : false,
 )
 test('overflow-fallback', exe, env : test_env)
 
@@ -129,6 +131,7 @@ exe = executable('642026-ec', '642026.c',
   c_args : [ '-DHAVE_CONFIG_H=1', '-DG_ERRORCHECK_MUTEXES' ],
   link_with : libglib,
   dependencies : deps,
+  install : false,
 )
 test('642026-ec', exe, env : test_env)
 
@@ -137,6 +140,7 @@ exe = executable('1bit-emufutex', '1bit-mutex.c',
   c_args : [ '-DHAVE_CONFIG_H=1', '-DTEST_EMULATED_FUTEX' ],
   link_with : libglib,
   dependencies : deps,
+  install : false,
 )
 test('1bit-emufutex', exe, env : test_env)
 
@@ -146,6 +150,7 @@ if glib_conf.has('HAVE_EVENTFD')
     c_args : [ '-DHAVE_CONFIG_H=1', '-DTEST_EVENTFD_FALLBACK' ],
     link_with : libglib,
     dependencies : deps,
+    install : false,
   )
   test('gwakeup-fallback', exe, env : test_env)
 endif
@@ -156,4 +161,5 @@ executable('test-spawn-echo', 'test-spawn-echo.c',
            c_args : [ '-DHAVE_CONFIG_H=1', '-DG_LOG_DOMAIN="GLib"' ],
            link_with : libglib,
            dependencies : deps,
+           install : false,
 )

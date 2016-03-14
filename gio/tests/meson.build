@@ -70,6 +70,7 @@ test_c_args = [
 foreach test_name : gio_tests
   exe = executable(test_name, '@0@.c'.format(test_name),
       include_directories : inc_dirs,
+      install : false,
       c_args : test_c_args,
       link_with : [ libgio, libgmodule, libglib ],
       dependencies : deps,
