@@ -219,8 +219,9 @@ functions = [
   [ 'fdwalk', 'HAVE_FDWALK', '#include <stdlib.h>' ],
   [ 'memmem', 'HAVE_MEMMEM', '''#define _GNU_SOURCE
                                 #include <string.h>''' ],
-  [ 'lchmod', 'HAVE_LCHMOD', '''#include <sys/stat.h>
-                                #include <unistd.h>''' ],
+# FIXME: this check doesn't work right, meson detects that it exists even if it's unusable
+#  [ 'lchmod', 'HAVE_LCHMOD', '''#include <sys/stat.h>
+#                                #include <unistd.h>''' ],
   [ 'lchown', 'HAVE_LCHOWN', '#include <unistd.h>' ],
   [ 'fchmod', 'HAVE_FCHMOD', '#include <sys/stat.h>' ],
   [ 'fchown', 'HAVE_FCHOWN', '#include <unistd.h>' ],
