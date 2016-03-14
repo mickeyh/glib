@@ -47,13 +47,27 @@ gio_tests = [
   'testfilemonitor',
 ]
 
-#if host_machine.system() != 'windows'
-#  gio_tests += [ 'unix', 'include' ]
-#endif
+gio_tests += [
+  'thumbnail-verification',
+]
+
+#  Test programs buildable on UNIX only
+
+if host_machine.system() != 'windows'
+  gio_tests += [
+    'file',
+    'gdbus-peer-object-manager',
+    'gdbus-unix-addresses',
+    'live-g-file',
+    'socket-address',
+    'stream-rw_all',
+    'unix-fd',
+    'unix-streams',
+  ]
+endif
 
 if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
-#  conflicts with glib/tests/autoptr apparently?!
-#  gio_tests += [ 'autoptr' ]
+  gio_tests += [ 'autoptr' ]
 endif
 
 test_env = [
@@ -68,7 +82,12 @@ test_c_args = [
 ]
 
 foreach test_name : gio_tests
-  exe = executable(test_name, '@0@.c'.format(test_name),
+  src_file = '@0@.c'.format(test_name)
+  # conflicts with glib/tests/autoptr, can't have two targets with same name
+  if test_name == 'autoptr'
+    test_name = 'autoptr-gio'
+  endif
+  exe = executable(test_name, src_file,
       include_directories : inc_dirs,
       install : false,
       c_args : test_c_args,
@@ -111,25 +130,47 @@ uninstalled_test_extra_programs = [
 foreach extra_program : uninstalled_test_extra_programs
   exe = executable(extra_program, '@0@.c'.format(extra_program),
       include_directories : inc_dirs,
+      install : false,
       c_args : test_c_args,
       link_with : [ libgio, libgmodule, libglib ],
       dependencies : deps,
   )
 endforeach
 
+test_extra_programs = [
+  'gdbus-connection-flush-helper',
+  'gdbus-testserver',
+]
+
+exe = executable('tls-certificate', 'tls-certificate.c', 'gtesttlsbackend.c',
+  include_directories : inc_dirs,
+  c_args : test_c_args,
+  link_with : [ libgio, libgmodule, libglib ],
+  dependencies : deps,
+)
+test('tls-certificate', exe, env : test_env)
+
+exe = executable('socket-client', 'socket-client.c', 'gtlsconsoleinteraction.c',
+  include_directories : inc_dirs,
+  c_args : test_c_args,
+  link_with : [ libgio, libgmodule, libglib ],
+  dependencies : deps,
+)
+
+#exe = executable('gdbus-daemon', 'gdbus-daemon.c', '../gdbusdaemon.c',
+#  #meson.build_root() + '/gio/gdbus-daemon-generated.c', # FIXME
+#  include_directories : inc_dirs,
+#  c_args : test_c_args,
+#  link_with : [ libgio, libgmodule, libglib ],
+#  dependencies : deps,
+#)
+#test('gdbus-daemon', exe, env : test_env)
+
 foo = '''
 c_args_atomic = [ ]
 if cc.get_id() == 'gcc'
   c_args_atomic += [ '-Wstrict-aliasing=2' ]
 endif
-
-exe = executable('atomic', 'atomic.c',
-  include_directories : inc_dirs,
-  c_args : [ '-DHAVE_CONFIG_H=1' ] + c_args_atomic,
-  link_with : libglib,
-  dependencies : deps,
-)
-test('atomic', exe, env : test_env)
 
 # FIXME: consolidate all of these into the array
 exe = executable('overflow-fallback', 'overflow.c',
