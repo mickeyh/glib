@@ -55,7 +55,7 @@ if g_module_impl == 'G_MODULE_IMPL_DL'
     endif
   endif
 
-  if cc.has_function('dlerror', prefix : '#include <dlfcn.h>', name : 'dlerror')
+  if cc.has_function('dlerror', prefix : '#include <dlfcn.h>', args : g_module_lib_args, name : 'dlerror')
     g_module_have_dlerror = 1
   endif
 endif
