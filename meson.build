@@ -292,6 +292,8 @@ functions = [
 
 if glib_conf.has('HAVE_SYS_STATVFS_H')
   functions += [ [ 'statvfs', 'HAVE_STATVFS', '#include <sys/statvfs.h>'] ]
+else
+  have_func_statvfs = false
 endif
 if glib_conf.has('HAVE_SYS_STATFS_H') or glib_conf.has('HAVE_SYS_MOUNT_H')
   functions += [ [ 'statfs', 'HAVE_STATFS', '''#ifdef HAVE_SYS_STATFS_H
@@ -300,6 +302,8 @@ if glib_conf.has('HAVE_SYS_STATFS_H') or glib_conf.has('HAVE_SYS_MOUNT_H')
                                                #ifdef HAVE_SYS_MOUNT_H
                                                #include <sys/mount.h>
                                                #endif'''] ]
+else
+  have_func_statfs = false
 endif
 
 # AIX splice is something else
@@ -735,13 +739,18 @@ else
   long_long_size = 0
 endif
 sizet_size = cc.sizeof('size_t')
-ssizet_size = cc.sizeof('ssize_t')
+if cc.get_id() == 'msvc'
+  ssizet_size = cc.sizeof('SSIZE_T', prefix : '#include <BaseTsd.h>')
+else
+  ssizet_size = cc.sizeof('ssize_t')
+endif
 
 char_align = cc.alignment('char')
 short_align = cc.alignment('short')
 int_align = cc.alignment('int')
 voidp_align = cc.alignment('void*')
 long_align = cc.alignment('long')
+long_long_align = cc.alignment('long long')
 sizet_align = cc.alignment('size_t')
 
 glib_conf.set('ALIGNOF_UNSIGNED_LONG', long_align)
@@ -804,8 +813,14 @@ glibconfig_conf.set('guint32_format', guint32_format)
 glib_conf.set('ALIGNOF_GUINT32', guint32_align)
 
 if long_long_size == 8
-  # Currently broken.
   gint64 = 'long long'
+  gint64_modifier='"ll"'
+  gint64_format='"lli"'
+  guint64_format='"llu"'
+  glib_extension=''
+  gint64_constant='(val##LL)'
+  guint64_constant='(val##ULL)'
+  guint64_align = long_long_align
 endif
 if long_size == 8
   gint64 = 'long'
@@ -1050,6 +1065,7 @@ has_systypes = cc.has_header('sys/types.h')
 if has_syspoll
   glibconfig_conf.set('GLIB_HAVE_SYS_POLL_H', true)
 endif
+has_winsock2 = cc.has_header('Winsock2.h')
 
 if has_syspoll and has_systypes
   templ = '''#include<sys/poll.h>
@@ -1059,22 +1075,23 @@ int main(int argc, char **argv) {
   printf("%d\n", (int)@0@);
   return 0;
 }'''
-  value_POLLIN = cc.run(templ.format('POLLIN')).stdout().strip()
-  value_POLLOUT = cc.run(templ.format('POLLOUT')).stdout().strip()
-  value_POLLPRI = cc.run(templ.format('POLLPRI')).stdout().strip()
-  value_POLLERR = cc.run(templ.format('POLLERR')).stdout().strip()
-  value_POLLHUP = cc.run(templ.format('POLLHUP')).stdout().strip()
-  value_POLLNVAL = cc.run(templ.format('POLLNVAL')).stdout().strip()
+elif has_winsock2
+  templ = '''#include<Winsock2.h>
+int main(int argc, char **argv) {
+  printf("%d\n", (int)@0@);
+  return 0;
+}'''
 else
   # FIXME?
   error('FIX POLL* defines')
-  value_POLLIN = 1
-  value_POLLOUT = 4
-  value_POLLPRI = 2
-  value_POLLERR = 8
-  value_POLLHUP = 16
-  value_POLLNVAL = 32
 endif
+
+value_POLLIN = cc.run(templ.format('POLLIN')).stdout().strip()
+value_POLLOUT = cc.run(templ.format('POLLOUT')).stdout().strip()
+value_POLLPRI = cc.run(templ.format('POLLPRI')).stdout().strip()
+value_POLLERR = cc.run(templ.format('POLLERR')).stdout().strip()
+value_POLLHUP = cc.run(templ.format('POLLHUP')).stdout().strip()
+value_POLLNVAL = cc.run(templ.format('POLLNVAL')).stdout().strip()
 
 glibconfig_conf.set('g_pollin', value_POLLIN)
 glibconfig_conf.set('g_pollout', value_POLLOUT)
