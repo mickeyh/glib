@@ -1010,7 +1010,7 @@ va_list_val_copy_prog = '''
 glib_va_val_copy = false
 if cc.compiles(va_list_val_copy_prog, name : 'va_lists can be copied as values')
   # FIXME: what to do when cross-compiling?
-  if cc.run(va_list_val_copy_prog, 'va_lists can be copied as values').returncode() == 0
+  if cc.run(va_list_val_copy_prog, name : 'va_lists can be copied as values').returncode() == 0
     glib_va_val_copy = true
   endif
 endif
@@ -1233,7 +1233,7 @@ endif
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
 glib_conf.set('USE_SYSTEM_PCRE', '/**/')
 
-libm = find_library('m')
+libm = find_library('m', required : false)
 libffi_dep = dependency('libffi', version : '>= 3.0.0')
 libz_dep = dependency('zlib')
 
