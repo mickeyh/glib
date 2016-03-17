@@ -1202,32 +1202,40 @@ else
 endif
 
 # Tests for iconv
+#
+# First, we check if the C library provides iconv, then GNU libiconv, then
+# a native implementation
+# FIXME: add option as well
+#
 # USE_LIBICONV_GNU: Using GNU libiconv
-# USE_LIBICONV_NATIVE: Using a native implementation of iconv in a separate library
-# On Windows we use a native implementation
-if host_machine.system() == 'windows'
+# USE_LIBICONV_NATIVE: Using a native impl of iconv in a separate library
+#
+# We should never use the MinGW C library's iconv. On Windows we use the
+# GNU implementation that ships with MinGW.
+if cc.get_id() != 'msvc'
+    check_iconv_args = ['-liconv']
+else
+    check_iconv_args = ['iconv.lib']
+endif
+
+if target_machine.system() != 'windows' and cc.has_function('iconv_open', prefix : '#include <iconv.h>', name : 'C library iconv')
+  libiconv = []
+# FIXME: this is all wrong, meson needs a more intuitive check for this, like
+# cc.has_lib_function() or such. Particularly, 'args' is compiler-specific.
+elif cc.compiles('''#include <iconv.h>
+                    void somefunc (void) {
+                      libiconv_open("foo", "bar");
+                    }''', args : check_iconv_args, name : 'GNU libiconv')
+  glib_conf.set('USE_LIBICONV_GNU', true)
+  libiconv = find_library('iconv')
+elif cc.compiles('''#include <iconv.h>
+                    void somefunc (void) {
+                      iconv_open("foo", "bar");
+                    }''', args : check_iconv_args, name : 'other libiconv')
   glib_conf.set('USE_LIBICONV_NATIVE', true)
   libiconv = find_library('iconv')
 else
-  # FIXME: add option as well
-  if cc.has_function('iconv_open', prefix : '#include <iconv.h>', name : 'C library iconv')
-    libiconv = [ ]
-  # FIXME: this is all wrong, meson needs a more intuitive check for this, like cc.has_lib_function() or such
-  elif cc.compiles('''#include <iconv.h>
-                      void somefunc (void) {
-                        libiconv_open("foo", "bar")
-                      }''', args : '-liconv', name : 'GNU libiconv')
-    glib_conf.set('USE_LIBICONV_GNU', true)
-    libiconv = find_library('iconv')
-  elif cc.compiles('''#include <iconv.h>
-                      void somefunc (void) {
-                        iconv_open("foo", "bar")
-                      }''', args : '-liconv', name : 'other libiconv')
-    glib_conf.set('USE_LIBICONV_NATIVE', true)
-    libiconv = find_library('iconv')
-  else
-    error('No iconv() implementation found in C library or libiconv')
-  endif
+  error('No iconv() implementation found in C library or libiconv')
 endif
 
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
