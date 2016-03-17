@@ -404,7 +404,7 @@ if cc.links(clock_gettime_test_code, name : 'clock_gettime')
   glib_conf.set('HAVE_CLOCK_GETTIME', 1)
 elif cc.links(clock_gettime_test_code, args : '-lrt', name : 'clock_gettime in librt')
   glib_conf.set('HAVE_CLOCK_GETTIME', 1)
-  librt = find_library('rt')
+  librt = cc.find_library('rt')
 endif
 
 # if statfs() takes 2 arguments (Posix) or 4 (Solaris)
@@ -1227,13 +1227,13 @@ elif cc.compiles('''#include <iconv.h>
                       libiconv_open("foo", "bar");
                     }''', args : check_iconv_args, name : 'GNU libiconv')
   glib_conf.set('USE_LIBICONV_GNU', true)
-  libiconv = find_library('iconv')
+  libiconv = cc.find_library('iconv')
 elif cc.compiles('''#include <iconv.h>
                     void somefunc (void) {
                       iconv_open("foo", "bar");
                     }''', args : check_iconv_args, name : 'other libiconv')
   glib_conf.set('USE_LIBICONV_NATIVE', true)
-  libiconv = find_library('iconv')
+  libiconv = cc.find_library('iconv')
 else
   error('No iconv() implementation found in C library or libiconv')
 endif
@@ -1241,7 +1241,7 @@ endif
 pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
 glib_conf.set('USE_SYSTEM_PCRE', '/**/')
 
-libm = find_library('m', required : false)
+libm = cc.find_library('m', required : false)
 libffi_dep = dependency('libffi', version : '>= 3.0.0')
 libz_dep = dependency('zlib')
 

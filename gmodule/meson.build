@@ -36,7 +36,7 @@ elif cc.has_function('NSLinkModule', prefix : '#include <mach-o/dyld.h>', name :
   g_module_need_uscore = 1
 elif cc.links(dlopen_dlsym_test_code, args : '-ldl', name : 'dlopen() and dlsym() in libdl')
   g_module_impl = 'G_MODULE_IMPL_DL'
-  libdl_dep = find_library('dl')
+  libdl_dep = cc.find_library('dl')
   g_module_lib_args = '-ldl'
 endif
 

@@ -50,10 +50,10 @@ if host_machine.system() != 'windows'
                         ''' + res_query_test
   if not cc.links(res_query_test_full, name : 'res_query()')
     if cc.links(res_query_test_full, args : '-lresolv', name : 'res_query() in -lresolv')
-      network_libs += [ find_library('resolv') ]
+      network_libs += [ cc.find_library('resolv') ]
       network_args += [ '-lresolv' ]
     elif cc.links(res_query_test, args : '-lbind', name : 'res_query() in -lbind')
-      network_libs += [ find_library('bind') ]
+      network_libs += [ cc.find_library('bind') ]
       network_args += [ '-lbind' ]
     else
       error('Could not find res_query()')
@@ -68,7 +68,7 @@ if host_machine.system() != 'windows'
                    }'''
   if not cc.links(socket_test, name : 'socket()')
     if cc.links(socket_test, args : '-lsocket', name : 'socket() in -lsocket')
-      network_libs += [ find_library('socket') ]
+      network_libs += [ cc.find_library('socket') ]
       network_args += [ '-lsocket' ]
     else
       error('Could not find socket()')
@@ -363,10 +363,10 @@ win32_actual_sources = gdbus_daemon_sources + [
 
 if host_machine.system() == 'windows'
   appinfo_sources += [ 'gwin32appinfo.c' ]
-  platform_deps += [ find_library('shlwapi'),
-                     find_library('ws2_32'),
-                     find_library('dnsapi'),
-                     find_library('iphlpapi') ]
+  platform_deps += [ cc.find_library('shlwapi'),
+                     cc.find_library('ws2_32'),
+                     cc.find_library('dnsapi'),
+                     cc.find_library('iphlpapi') ]
   # win32_sources = $(win32_actual_sources)
 
   gio_win32_include_headers = [
