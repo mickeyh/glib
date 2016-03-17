@@ -799,4 +799,6 @@ executable('gresource', 'gresource-tool.c',
   dependencies : libelf,
 )
 
-subdir('tests')
+if host_machine.system() != 'windows'
+  subdir('tests')
+endif
