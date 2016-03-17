@@ -1,6 +1,9 @@
 configure_file(input : 'glibconfig.h.in', output : 'glibconfig.h', configuration : glibconfig_conf)
 
 subdir('libcharset')
+if not pcre.found()
+  subdir('pcre')
+endif
 
 glib_headers = [
   'glib.h',
@@ -196,13 +199,14 @@ extra_src = ['gspawn.c', 'giounix.c']
 #'gspawn-win32-helper.c', # FIXME
 
 libglib = shared_library('glib',
-sources : [deprecated_sources, glib_sources, thread_src, plat_src, extra_src],
-version : glib_version,
-soversion : interface_version,
-install : true,
-include_directories : inc_dirs,
-link_with : charset_lib,
-dependencies : [ pcre, thread_dep, libiconv, librt ],
-c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC'])
+  sources : [deprecated_sources, glib_sources, thread_src, plat_src, extra_src],
+  version : glib_version,
+  soversion : interface_version,
+  install : true,
+  include_directories : inc_dirs,
+  link_with : charset_lib,
+  dependencies : [ pcre, thread_dep, libiconv, librt ],
+  c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC']
+)
 
 subdir('tests')
