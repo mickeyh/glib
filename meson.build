@@ -1238,8 +1238,8 @@ else
   error('No iconv() implementation found in C library or libiconv')
 endif
 
-pcre = dependency('libpcre') # Should check for Unicode support, too. FIXME
-glib_conf.set('USE_SYSTEM_PCRE', '/**/')
+pcre = dependency('libpcre', required : false) # Should check for Unicode support, too. FIXME
+glib_conf.set('USE_SYSTEM_PCRE', not pcre.found())
 
 libm = cc.find_library('m', required : false)
 libffi_dep = dependency('libffi', version : '>= 3.0.0')
