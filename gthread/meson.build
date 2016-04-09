@@ -5,7 +5,6 @@ libgthread = shared_library('gthread',
   version : glib_version,
   soversion : interface_version,
   install : true,
-  include_directories : inc_dirs,
-  link_with : libglib,
+  dependencies : [libglib_dep],
   c_args : ['-DG_LOG_DOMAIN="GThread"' ],
 )

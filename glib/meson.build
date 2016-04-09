@@ -99,14 +99,6 @@ glib_sub_headers = [
 ]
 install_headers(glib_sub_headers, subdir : 'glib-2.0/glib/')
 
-if host_machine.system() == 'windows'
-  thread_src = ['gthread-win32.c']
-  plat_src = []
-else
-  thread_src = ['gthread-posix.c']
-  plat_src = ['glib-unix.c']
-endif
-
 deprecated_sources = [
 'deprecated/gallocator.c',
 'deprecated/gcache.c',
@@ -167,7 +159,6 @@ glib_sources = [
 'gstrfuncs.c',
 'gstring.c',
 'gstringchunk.c',
-'gtester.c',
 'gtestutils.c',
 'gthread.c',
 'gthreadpool.c',
@@ -193,20 +184,67 @@ glib_sources = [
 'gwakeup.c',
 'gprintf.c',]
 
-extra_src = ['gspawn.c', 'giounix.c']
+if cc.get_id() != 'msvc'
+  glib_sources += ['gtester.c']
+endif
 
-#'gspawn-win32.c', # FIXME
-#'gspawn-win32-helper.c', # FIXME
+if host_system == 'windows'
+  thread_src = ['gthread-win32.c']
+  plat_src = ['gwin32.c', 'gspawn-win32.c', 'giowin32.c']
+  platform_deps = [winsock2, cc.find_library('winmm')]
+else
+  thread_src = ['gthread-posix.c']
+  plat_src = ['glib-unix.c', 'gspawn.c', 'giounix.c']
+  platform_deps = []
+endif
 
 libglib = shared_library('glib',
-  sources : [deprecated_sources, glib_sources, thread_src, plat_src, extra_src],
+  sources : [deprecated_sources, glib_sources, thread_src, plat_src],
   version : glib_version,
   soversion : interface_version,
   install : true,
-  include_directories : inc_dirs,
+  include_directories : configinc,
   link_with : charset_lib,
-  dependencies : [ pcre, thread_dep, libiconv, librt ],
+  dependencies : [pcre, thread_dep, libintl, librt] + libiconv + platform_deps,
   c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC']
 )
 
-subdir('tests')
+libglib_dep = declare_dependency(link_with : libglib,
+  # We sadly need to export configinc here because everyone includes <glib/*.h>
+  include_directories : [configinc, glibinc])
+
+# On Windows, glib needs a spawn helper for g_spawn* API
+if host_system == 'windows'
+  if host_machine.cpu_family() == 'x86'
+    executable('gspawn-win32-helper', 'gspawn-win32-helper.c',
+      install : true,
+      c_args : ['-DHAVE_CONFIG_H=1'],
+      include_directories : configinc,
+      dependencies : [libglib_dep],
+    )
+    executable('gspawn-win32-helper-console', 'gspawn-win32-helper.c',
+      install : true,
+      c_args : ['-DHAVE_CONFIG_H=1', '-DHELPER_CONSOLE'],
+      include_directories : configinc,
+      dependencies : [libglib_dep],
+    )
+  else
+    executable('gspawn-win64-helper', 'gspawn-win32-helper.c',
+      install : true,
+      c_args : ['-DHAVE_CONFIG_H=1'],
+      include_directories : configinc,
+      dependencies : [libglib_dep],
+    )
+    executable('gspawn-win64-helper-console', 'gspawn-win32-helper.c',
+      install : true,
+      c_args : ['-DHAVE_CONFIG_H=1', '-DHELPER_CONSOLE'],
+      include_directories : configinc,
+      dependencies : [libglib_dep],
+    )
+  endif
+endif
+
+# gtester doesn't work on native windows
+if cc.get_id() != 'msvc'
+  subdir('tests')
+endif
