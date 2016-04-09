@@ -203,10 +203,13 @@ libglib = shared_library('glib',
   version : glib_version,
   soversion : interface_version,
   install : true,
-  include_directories : inc_dirs,
+  include_directories : configinc,
   link_with : charset_lib,
-  dependencies : [ pcre, thread_dep, libiconv, librt ],
+  dependencies : [pcre, thread_dep, librt] + libiconv,
   c_args : ['-DG_LOG_DOMAIN="GLib"', '-DGLIB_COMPILATION', '-DPCRE_STATIC']
 )
+
+libglib_dep = declare_dependency(link_with : libglib,
+  include_directories : [configinc, glibinc])
 
 subdir('tests')

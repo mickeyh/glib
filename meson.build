@@ -16,7 +16,11 @@ micro_version = 6
 interface_version = 2 # FIXME
 
 glib_version = meson.project_version()
-inc_dirs = include_directories('.', 'glib', 'gmodule', 'gio')
+configinc = include_directories('.')
+glibinc = include_directories('glib')
+gobjectinc = include_directories('gobject')
+gmoduleinc = include_directories('gmodule')
+gioinc = include_directories('gio')
 
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
@@ -59,75 +63,65 @@ glibconfig_conf.set('glib_os', glib_os)
 
 # check for header files
 
-include_sys_param_h_if_available = '''
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif'''
-
 headers = [
-  [ 'stdlib.h', 'HAVE_STDLIB_H' ],
-  [ 'string.h', 'HAVE_STRING_H' ],
-  [ 'strings.h', 'HAVE_STRINGS_H' ],
-  [ 'memory.h', 'HAVE_MEMORY_H' ],
-  [ 'alloca.h', 'HAVE_ALLOCA_H' ],
-  [ 'locale.h', 'HAVE_LOCALE_H' ],
-  [ 'xlocale.h', 'HAVE_XLOCALE_H' ],
-  [ 'float.h', 'HAVE_FLOAT_H' ],
-  [ 'limits.h', 'HAVE_LIMITS_H' ],
-  [ 'pwd.h', 'HAVE_PWD_H' ],
-  [ 'grp.h', 'HAVE_GRP_H' ],
-  [ 'poll.h', 'HAVE_POLL_H' ],
-  [ 'sys/param.h', 'HAVE_SYS_PARAM_H' ],
-  [ 'sys/resource.h', 'HAVE_SYS_RESOURCE_H' ],
-  [ 'mach/mach_time.h', 'HAVE_MACH_MACH_TIME_H' ],
-  [ 'sys/select.h', 'HAVE_SYS_SELECT_H' ],
-  [ 'stdint.h', 'HAVE_STDINT_H' ],
-  [ 'inttypes.h', 'HAVE_INTTYPES_H' ],
-  [ 'sched.h', 'HAVE_SCHED_H' ],
-  [ 'malloc.h', 'HAVE_MALLOC_H' ],
-  [ 'sys/vfs.h', 'HAVE_SYS_VFS_H' ],
-  [ 'sys/vmount.h', 'HAVE_SYS_VMOUNT_H' ],
-  [ 'sys/statfs.h', 'HAVE_SYS_STATFS_H' ],
-  [ 'sys/statvfs.h', 'HAVE_SYS_STATVFS_H' ],
-  [ 'sys/filio.h', 'HAVE_SYS_FILIO_H' ],
-  [ 'mntent.h', 'HAVE_MNTENT_H' ],
-  [ 'sys/mnttab.h', 'HAVE_SYS_MNTTAB_H' ],
-  [ 'sys/vfstab.h', 'HAVE_SYS_VFSTAB_H' ],
-  [ 'sys/mntctl.h', 'HAVE_SYS_mntctl_H' ],
-  [ 'fstab.h', 'HAVE_FSTAB_H' ],
-  [ 'linux/magic.h', 'HAVE_LINUX_MAGIC_H' ],
-  [ 'sys/prctl.h', 'HAVE_SYS_PRCTL_H' ],
-  [ 'dirent.h', 'HAVE_DIRENT_H' ], # Some versions of MSC lack these
-  [ 'sys/time.h', 'HAVE_SYS_TIME_H' ], # Some versions of MSC lack these
-  [ 'sys/times.h', 'HAVE_SYS_TIMES_H' ],
-  [ 'sys/wait.h', 'HAVE_SYS_WAIT_H' ],
-  [ 'unistd.h', 'HAVE_UNISTD_H' ],
-  [ 'values.h', 'HAVE_VALUES_H' ],
-  [ 'sys/types.h', 'HAVE_SYS_TYPES_H' ],
-  [ 'sys/uio.h', 'HAVE_SYS_UIO_H' ],
-  [ 'sys/mkdev.h', 'HAVE_SYS_MKDEV_H' ],
-  [ 'sys/mount.h', 'HAVE_SYS_MOUNT_H', include_sys_param_h_if_available ],
-  [ 'sys/sysctl.h', 'HAVE_SYS_SYSCTL_H', include_sys_param_h_if_available ],
-  [ 'crt_externs.h', 'HAVE_CRT_EXTERNS_H' ],
-  [ 'linux/netlink.h', 'HAVE_NETLINK', '#include <sys/socket.h>' ],
-  [ 'sys/inotify.h', 'HAVE_SYS_INOTIFY_H' ],
-  [ 'sys/event.h', 'HAVE_SYS_EVENT_H' ],
+  ['stdlib.h', 'HAVE_STDLIB_H'],
+  ['string.h', 'HAVE_STRING_H'],
+  ['strings.h', 'HAVE_STRINGS_H'],
+  ['memory.h', 'HAVE_MEMORY_H'],
+  ['alloca.h', 'HAVE_ALLOCA_H'],
+  ['locale.h', 'HAVE_LOCALE_H'],
+  ['xlocale.h', 'HAVE_XLOCALE_H'],
+  ['float.h', 'HAVE_FLOAT_H'],
+  ['limits.h', 'HAVE_LIMITS_H'],
+  ['pwd.h', 'HAVE_PWD_H'],
+  ['grp.h', 'HAVE_GRP_H'],
+  ['poll.h', 'HAVE_POLL_H'],
+  ['sys/param.h', 'HAVE_SYS_PARAM_H'],
+  ['sys/resource.h', 'HAVE_SYS_RESOURCE_H'],
+  ['mach/mach_time.h', 'HAVE_MACH_MACH_TIME_H'],
+  ['sys/select.h', 'HAVE_SYS_SELECT_H'],
+  ['stdint.h', 'HAVE_STDINT_H'],
+  ['inttypes.h', 'HAVE_INTTYPES_H'],
+  ['sched.h', 'HAVE_SCHED_H'],
+  ['malloc.h', 'HAVE_MALLOC_H'],
+  ['sys/vfs.h', 'HAVE_SYS_VFS_H'],
+  ['sys/vmount.h', 'HAVE_SYS_VMOUNT_H'],
+  ['sys/statfs.h', 'HAVE_SYS_STATFS_H'],
+  ['sys/statvfs.h', 'HAVE_SYS_STATVFS_H'],
+  ['sys/filio.h', 'HAVE_SYS_FILIO_H'],
+  ['mntent.h', 'HAVE_MNTENT_H'],
+  ['sys/mnttab.h', 'HAVE_SYS_MNTTAB_H'],
+  ['sys/vfstab.h', 'HAVE_SYS_VFSTAB_H'],
+  ['sys/mntctl.h', 'HAVE_SYS_mntctl_H'],
+  ['fstab.h', 'HAVE_FSTAB_H'],
+  ['linux/magic.h', 'HAVE_LINUX_MAGIC_H'],
+  ['sys/prctl.h', 'HAVE_SYS_PRCTL_H'],
+  ['dirent.h', 'HAVE_DIRENT_H'], # Some versions of MSC lack these
+  ['sys/time.h', 'HAVE_SYS_TIME_H'], # Some versions of MSC lack these
+  ['sys/times.h', 'HAVE_SYS_TIMES_H'],
+  ['sys/wait.h', 'HAVE_SYS_WAIT_H'],
+  ['unistd.h', 'HAVE_UNISTD_H'],
+  ['values.h', 'HAVE_VALUES_H'],
+  ['sys/types.h', 'HAVE_SYS_TYPES_H'],
+  ['sys/uio.h', 'HAVE_SYS_UIO_H'],
+  ['sys/mkdev.h', 'HAVE_SYS_MKDEV_H'],
+  ['sys/mount.h', 'HAVE_SYS_MOUNT_H'],
+  ['sys/sysctl.h', 'HAVE_SYS_SYSCTL_H'],
+  ['crt_externs.h', 'HAVE_CRT_EXTERNS_H'],
+  ['linux/netlink.h', 'HAVE_NETLINK'],
+  ['sys/inotify.h', 'HAVE_SYS_INOTIFY_H'],
+  ['sys/event.h', 'HAVE_SYS_EVENT_H'],
 ]
 
 foreach h : headers
-  header_check_prefix = glib_conf_prefix
-  if h.length() == 3
-    header_check_prefix = header_check_prefix + h[2]
-  endif
-  if cc.has_header(h[0], prefix: header_check_prefix)
+  if cc.has_header(h[0])
     glib_conf.set(h[1], 1)
     glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(h[1])
   endif
 endforeach
 
 if glib_conf.has('HAVE_LOCALE_H')
-  if cc.compiles('''#include <locale.h>
-                    void foo() { LC_MESSAGES; }''')
+  if cc.has_header_symbol('locale.h', 'LC_MESSAGES')
     glib_conf.set('HAVE_LC_MESSAGES', 1)
   endif
 endif
@@ -185,123 +179,79 @@ endforeach
 #FIXME: maybe we should add available includes all to the glib_conf_prefix list
 # functions
 functions = [
-  [ 'alloca', 'HAVE_ALLOCA', '#include <alloca.h>' ],
-  [ 'mmap', 'HAVE_MMAP', '#include <sys/mman.h>' ],
-  [ 'posix_memalign', 'HAVE_POSIX_MEMALIGN', '#include <stdlib.h>' ],
-  [ 'memalign', 'HAVE_MEMALIGN', '#include <malloc.h>' ],
-  [ 'valloc', 'HAVE_VALLOC', '#include <stdlib.h>' ],
-  [ 'fsync', 'HAVE_FSYNC', '''#ifdef HAVE_UNISTD_H
-                              #include <unistd.h>
-                              #endif''' ],
-  [ 'pipe2', 'HAVE_PIPE2', '''#define _GNU_SOURCE
-                              #include <fcntl.h>
-                              #include <unistd.h>''' ],
-  [ 'issetugid', 'HAVE_ISSETUGID', '#include <unistd.h>' ],
-  [ 'timegm', 'HAVE_TIMEGM', '#include <time.h>' ],
-  [ 'gmtime_r', 'HAVE_GMTIME_R', '#include <time.h>' ],
-  [ 'strerror_r', 'HAVE_STRERROR_R', '#include <string.h>' ],
-  [ 'lstat', 'HAVE_LSTAT', '''#include <sys/types.h>
-                              #include <sys/stat.h>
-                              #include <unistd.h>'''],
-  [ 'strsignal', 'HAVE_STRSIGNAL', '#include <string.h>' ],
-  [ 'vsnprintf', 'HAVE_VSNPRINTF', '#include <stdio.h>' ],
-  [ 'stpcpy', 'HAVE_STPCPY', '#include <string.h>' ],
-  [ 'strcasecmp', 'HAVE_STRCASECMP', '#include <strings.h>' ],
-  [ 'strncasecmp', 'HAVE_STRNCASECMP', '#include <strings.h>' ],
-  [ 'poll', 'HAVE_POLL', '#include <poll.h>' ],
-  [ 'vasprintf', 'HAVE_VASPRINTF', '''#define _GNU_SOURCE
-                                      #include <stdio.h>''' ],
-  [ 'setenv', 'HAVE_SETENV', '#include <stdlib.h>' ],
-  [ 'unsetenv', 'HAVE_UNSETENV', '#include <stdlib.h>' ],
-  [ 'getc_unlocked', 'HAVE_GETC_UNLOCKED', '#include <stdio.h>' ],
-  [ 'readlink', 'HAVE_READLINK', '#include <unistd.h>' ],
-  [ 'symlink', 'HAVE_SYMLINK', '#include <unistd.h>' ],
-  [ 'fdwalk', 'HAVE_FDWALK', '#include <stdlib.h>' ],
-  [ 'memmem', 'HAVE_MEMMEM', '''#define _GNU_SOURCE
-                                #include <string.h>''' ],
-# FIXME: this check doesn't work right, meson detects that it exists even if it's unusable
-#  [ 'lchmod', 'HAVE_LCHMOD', '''#include <sys/stat.h>
-#                                #include <unistd.h>''' ],
-  [ 'lchown', 'HAVE_LCHOWN', '#include <unistd.h>' ],
-  [ 'fchmod', 'HAVE_FCHMOD', '#include <sys/stat.h>' ],
-  [ 'fchown', 'HAVE_FCHOWN', '#include <unistd.h>' ],
-  [ 'utimes', 'HAVE_UTIMES', '#include <sys/time.h>' ],
-  [ 'getresuid', 'HAVE_GETRESUID', '''#define _GNU_SOURCE
-                                      #include <unistd.h>''' ],
-  [ 'getmntent_r', 'HAVE_GETMNTENT_R', '''#include <stdio.h>
-                                          #include <mntent.h>'''],
-  [ 'setmntent', 'HAVE_SETMNTENT', '''#include <stdio.h>
-                                      #include <mntent.h>'''],
-  [ 'endmntent', 'HAVE_ENDMNTENT', '''#include <stdio.h>
-                                      #include <mntent.h>'''],
-  [ 'hasmntopt', 'HAVE_HASMNTOPT', '''#include <stdio.h>
-                                      #include <mntent.h>'''],
-  [ 'getfsstat', 'HAVE_GETFSSTAT', '''#include <sys/param.h>
-                                      #include <sys/ucred.h>
-                                      #include <sys/mount.h''' ],
-  [ 'getvfsstat', 'HAVE_GETVFSSTAT', '''#include <sys/types.h>
-                                        #include <sys/statvfs.h>''' ],
-  [ 'fallocate', 'HAVE_FALLOCATE', '''#define _GNU_SOURCE
-                                      #include <fcntl.h>''' ],
-  [ 'localtime_r', 'HAVE_LOCALTIME_R', '#include <time.h>' ],
-  [ 'gmtime_r', 'HAVE_GMTIME_R', '#include <time.h>' ],
-  [ 'getpwuid_r', 'HAVE_GETPWUID_R', '''#include <sys/types.h>
-                                        #include <pwd.h>''' ],
-  [ 'getgrgid_r', 'HAVE_GETGRGID_R', '''#include <sys/types.h>
-                                        #include <grp.h>''' ],
-  [ 'prlimit', 'HAVE_PRLIMIT', '''#define _GNU_SOURCE
-                                  #include <sys/time.h>
-                                  #include <sys/resource.h>''' ],
-  [ 'snprintf', 'HAVE_SNPRINTF', '#include <stdio.h>' ],
-  [ 'strnlen', 'HAVE_STRNLEN', '#include <string.h>' ],
-  [ 'wcslen', 'HAVE_WCSLEN', '#include <wchar.h>' ],
-  [ 'wcsnlen', 'HAVE_WCSNLEN', '#include <wchar.h>' ],
-  [ 'mbrtowc', 'HAVE_MBRTOWC', '#include <wchar.h>' ],
-  [ 'wcrtomb', 'HAVE_WCRTOMB', '#include <wchar.h>' ],
-  [ 'newlocale', 'HAVE_NEWLOCALE', '#include <locale.h>' ],
-  [ 'uselocale', 'HAVE_USELOCALE', '#include <locale.h>' ],
-  [ 'strtod_l', 'HAVE_STRTOD_L', '''#define _GNU_SOURCE
-                                    #include <stdlib.h>
-                                    #ifdef HAVE_XLOCALE_H
-                                    #include <xlocale.h>
-                                    #endif''' ],
-  [ 'strtoll_l', 'HAVE_STRTOLL_L', '''#define _GNU_SOURCE
-                                      #include <stdlib.h>
-                                      #include <limits.h>
-                                      #ifdef HAVE_XLOCALE_H
-                                      #include <xlocale.h>
-                                      #endif''' ],
-  [ 'strtoull_l', 'HAVE_STRTOULL_L', '''#define _GNU_SOURCE
-                                        #include <stdlib.h>
-                                        #include <limits.h>
-                                        #ifdef HAVE_XLOCALE_H
-                                        #include <xlocale.h>
-                                        #endif''' ],
-  [ 'inotify_init1', 'HAVE_INOTIFY_INIT1', '#include <sys/inotify.h>' ],
-  [ 'kqueue', 'HAVE_KQUEUE', '#include <sys/event.h>' ],
-  [ 'kevent', 'HAVE_KEVENT', '#include <sys/event.h>' ],
-  [ 'getservent', 'HAVE_GETSERVENT', '#include <netdb.h>' ],
-  [ 'getprotobyname_r', 'HAVE_GETPROTOBYNAME_R', '#include <netdb.h>' ],
-  [ 'if_indextoname', 'HAVE_IF_INDEXTONAME', '#include <net/if.h>' ],
-  [ 'if_nametoindex', 'HAVE_IF_NAMETOINDEX', '#include <net/if.h>' ],
-  [ 'sendmmsg', 'HAVE_SENDMMSG', '''#define _GNU_SOURCE
-                                    #include <sys/socket.h>''' ],
-  [ 'recvmmsg', 'HAVE_RECVMMSG', '''#define _GNU_SOURCE
-                                    #include <sys/socket.h>''' ],
+  ['alloca', 'HAVE_ALLOCA'],
+  ['mmap', 'HAVE_MMAP'],
+  ['posix_memalign', 'HAVE_POSIX_MEMALIGN'],
+  ['memalign', 'HAVE_MEMALIGN'],
+  ['valloc', 'HAVE_VALLOC'],
+  ['fsync', 'HAVE_FSYNC'],
+  ['pipe2', 'HAVE_PIPE2'],
+  ['issetugid', 'HAVE_ISSETUGID'],
+  ['timegm', 'HAVE_TIMEGM'],
+  ['gmtime_r', 'HAVE_GMTIME_R'],
+  ['strerror_r', 'HAVE_STRERROR_R'],
+  ['lstat', 'HAVE_LSTAT'],
+  ['strsignal', 'HAVE_STRSIGNAL'],
+  ['vsnprintf', 'HAVE_VSNPRINTF'],
+  ['stpcpy', 'HAVE_STPCPY'],
+  ['strcasecmp', 'HAVE_STRCASECMP'],
+  ['strncasecmp', 'HAVE_STRNCASECMP'],
+  ['poll', 'HAVE_POLL'],
+  ['vasprintf', 'HAVE_VASPRINTF'],
+  ['setenv', 'HAVE_SETENV'],
+  ['unsetenv', 'HAVE_UNSETENV'],
+  ['getc_unlocked', 'HAVE_GETC_UNLOCKED'],
+  ['readlink', 'HAVE_READLINK'],
+  ['symlink', 'HAVE_SYMLINK'],
+  ['fdwalk', 'HAVE_FDWALK'],
+  ['memmem', 'HAVE_MEMMEM'],
+  ['lchmod', 'HAVE_LCHMOD'],
+  ['lchown', 'HAVE_LCHOWN'],
+  ['fchmod', 'HAVE_FCHMOD'],
+  ['fchown', 'HAVE_FCHOWN'],
+  ['utimes', 'HAVE_UTIMES'],
+  ['getresuid', 'HAVE_GETRESUID'],
+  ['getmntent_r', 'HAVE_GETMNTENT_R'],
+  ['setmntent', 'HAVE_SETMNTENT'],
+  ['endmntent', 'HAVE_ENDMNTENT'],
+  ['hasmntopt', 'HAVE_HASMNTOPT'],
+  ['getfsstat', 'HAVE_GETFSSTAT'],
+  ['getvfsstat', 'HAVE_GETVFSSTAT'],
+  ['fallocate', 'HAVE_FALLOCATE'],
+  ['localtime_r', 'HAVE_LOCALTIME_R'],
+  ['gmtime_r', 'HAVE_GMTIME_R'],
+  ['getpwuid_r', 'HAVE_GETPWUID_R'],
+  ['getgrgid_r', 'HAVE_GETGRGID_R'],
+  ['prlimit', 'HAVE_PRLIMIT'],
+  ['snprintf', 'HAVE_SNPRINTF'],
+  ['strnlen', 'HAVE_STRNLEN'],
+  ['wcslen', 'HAVE_WCSLEN'],
+  ['wcsnlen', 'HAVE_WCSNLEN'],
+  ['mbrtowc', 'HAVE_MBRTOWC'],
+  ['wcrtomb', 'HAVE_WCRTOMB'],
+  ['newlocale', 'HAVE_NEWLOCALE'],
+  ['uselocale', 'HAVE_USELOCALE'],
+  ['strtod_l', 'HAVE_STRTOD_L'],
+  ['strtoll_l', 'HAVE_STRTOLL_L'],
+  ['strtoull_l', 'HAVE_STRTOULL_L'],
+  ['inotify_init1', 'HAVE_INOTIFY_INIT1'],
+  ['kqueue', 'HAVE_KQUEUE'],
+  ['kevent', 'HAVE_KEVENT'],
+  ['getservent', 'HAVE_GETSERVENT'],
+  ['getprotobyname_r', 'HAVE_GETPROTOBYNAME_R'],
+  ['if_indextoname', 'HAVE_IF_INDEXTONAME'],
+  ['if_nametoindex', 'HAVE_IF_NAMETOINDEX'],
+  ['sendmmsg', 'HAVE_SENDMMSG'],
+  ['recvmmsg', 'HAVE_RECVMMSG'],
 ]
 
 if glib_conf.has('HAVE_SYS_STATVFS_H')
-  functions += [ [ 'statvfs', 'HAVE_STATVFS', '#include <sys/statvfs.h>'] ]
+  functions += [['statvfs', 'HAVE_STATVFS']]
 else
   have_func_statvfs = false
 endif
 if glib_conf.has('HAVE_SYS_STATFS_H') or glib_conf.has('HAVE_SYS_MOUNT_H')
-  functions += [ [ 'statfs', 'HAVE_STATFS', '''#ifdef HAVE_SYS_STATFS_H
-                                               #include <sys/statfs.h>
-                                               #endif
-                                               #ifdef HAVE_SYS_MOUNT_H
-                                               #include <sys/mount.h>
-                                               #endif'''] ]
+  functions += [['statfs', 'HAVE_STATFS']]
 else
   have_func_statfs = false
 endif
@@ -309,17 +259,12 @@ endif
 # AIX splice is something else
 if host_machine.system() != 'aix'
   functions += [
-    [ 'splice', 'HAVE_SPLICE', '''#define _GNU_SOURCE
-                                  #include <fcntl.h>''' ]
+    [ 'splice', 'HAVE_SPLICE' ]
   ]
 endif
 
 foreach f : functions
-  header_check_prefix = glib_conf_prefix
-  if f.length() == 3
-    header_check_prefix = header_check_prefix + f[2]
-  endif
-  if cc.has_function (f[0], prefix : header_check_prefix)
+  if cc.has_function(f[0])
     glib_conf.set(f[1], 1)
     glib_conf_prefix = glib_conf_prefix + '#define @0@ 1\n'.format(f[1])
     set_variable('have_func_' + f[0], true)
@@ -360,15 +305,6 @@ if glib_have_carbon
   CARBON_LIBS='-Wl,-framework,Carbon' # FIXME: propagate to .pc files as well
 else
   CARBON_LIBS=''
-endif
-
-# Check for nl_langinfo and CODESET
-if cc.links('''#include <langinfo.h>
-               int main (int argc, char ** argv) {
-                 char *codeset = nl_langinfo (CODESET);
-                 return 0;
-               }''', name : 'nl_langinfo and CODESET')
-  glib_conf.set('HAVE_LANGINFO_CODESET', 1)
 endif
 
 # Check for futex(2)
@@ -467,7 +403,7 @@ endif
 # AC_FUNC_VSNPRINTF_C99
 # Check whether there is a snprintf() function with C99 semantics installed.
 # AC_FUNC_SNPRINTF_C99
-if host_machine.system() == 'windows' and cc.get_id() == 'gcc' # FIXME: is it mingw on windows?
+if host_machine.system() == 'windows' and cc.get_id() == 'gcc'
   # Unfortunately the mingw implementations of C99-style snprintf and vsnprintf
   # don't seem to be quite good enough, at least not in mingw-runtime-3.14.
   # (Sorry, I don't know exactly what is the problem, but it is related to
@@ -593,7 +529,8 @@ if cc.links('''#include <langinfo.h>
                int main (int argc, char ** argv) {
                  char *codeset = nl_langinfo (CODESET);
                  return 0;
-               }''', name : 'nl_langinfo (CODESET)')
+               }''', name : 'nl_langinfo and CODESET')
+  glib_conf.set('HAVE_LANGINFO_CODESET', 1)
   glib_conf.set('HAVE_CODESET', 1)
 endif
 
@@ -638,8 +575,7 @@ if not cc.compiles('''signed char x;''', name : 'signed')
 endif
 
 # Check if the ptrdiff_t type exists
-if cc.compiles('''#include <stddef.h>
-                  ptrdiff_t x;''', name : 'ptrdiff_t')
+if cc.has_header_symbol('stddef.h', 'ptrdiff_t')
   glib_conf.set('HAVE_PTRDIFF_T', 1)
 endif
 
@@ -677,16 +613,12 @@ if cc.compiles('''/* The Stardent Vistra knows sizeof(long double), but does not
 endif
 
 #dnl Test whether <stddef.h> has the 'wchar_t' type.
-if cc.compiles('''#include <stddef.h>
-                  wchar_t foo = (wchar_t)'\0';''',
-               name : 'wchar_t')
+if cc.has_header_symbol('stddef.h', 'wchar_t')
   glib_conf.set('HAVE_WCHAR_T', 1)
 endif
 
 # Test whether <wchar.h> has the 'wint_t' type.
-if cc.compiles('''#include <wchar.h>
-                  wint_t foo = (wchar_t)'\0';''',
-               name : 'wint_t')
+if cc.has_header_symbol('wchar.h', 'wint_t')
   glib_conf.set('HAVE_WINT_T', 1)
 endif
 
@@ -1212,28 +1144,17 @@ endif
 #
 # We should never use the MinGW C library's iconv. On Windows we use the
 # GNU implementation that ships with MinGW.
-if cc.get_id() != 'msvc'
-    check_iconv_args = ['-liconv']
-else
-    check_iconv_args = ['iconv.lib']
-endif
 
-if target_machine.system() != 'windows' and cc.has_function('iconv_open', prefix : '#include <iconv.h>', name : 'C library iconv')
+if target_machine.system() != 'windows' and cc.has_function('iconv_open')
   libiconv = []
 # FIXME: this is all wrong, meson needs a more intuitive check for this, like
 # cc.has_lib_function() or such. Particularly, 'args' is compiler-specific.
-elif cc.compiles('''#include <iconv.h>
-                    void somefunc (void) {
-                      libiconv_open("foo", "bar");
-                    }''', args : check_iconv_args, name : 'GNU libiconv')
+elif cc.has_header_symbol('iconv.h', 'libiconv_open')
   glib_conf.set('USE_LIBICONV_GNU', true)
-  libiconv = cc.find_library('iconv')
-elif cc.compiles('''#include <iconv.h>
-                    void somefunc (void) {
-                      iconv_open("foo", "bar");
-                    }''', args : check_iconv_args, name : 'other libiconv')
+  libiconv = [cc.find_library('iconv')]
+elif cc.has_header_symbol('iconv.h', 'iconv_open')
   glib_conf.set('USE_LIBICONV_NATIVE', true)
-  libiconv = cc.find_library('iconv')
+  libiconv = [cc.find_library('iconv')]
 else
   error('No iconv() implementation found in C library or libiconv')
 endif
@@ -1260,4 +1181,3 @@ subdir('gmodule')
 subdir('gio')
 
 configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
-

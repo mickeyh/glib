@@ -271,28 +271,6 @@ platform_deps = [ ]
 internal_deps = [ ]
 appinfo_sources = [ ]
 
-# inotify
-if glib_conf.has('HAVE_SYS_INOTIFY_H') and have_func_inotify_init1
-  subdir('inotify')
-  internal_deps += [ inotify_lib ]
-endif
-
-# kevent
-if have_func_kqueue and have_func_kevent
-  subdir('kqueue')
-  internal_deps += [ kqueue_lib ]
-endif
-
-if host_machine.system() == 'windows'
-  subdir('win32')
-  internal_deps += [ giowin32_lib ]
-endif
-
-# FIXME: FAM support
-#if HAVE_FAM
-#  subdir('fam')
-#endif
-
 unix_sources = [ ]
 if host_machine.system() != 'windows'
   appinfo_sources += [ 'gdesktopappinfo.c' ]
@@ -767,13 +745,37 @@ gioenumtypes_c = custom_target('gioenumtypes_c',
   depends : [ gioenumtypes_h ],
   command : [ gio_mkenums, '@OUTPUT@', meson.source_root(), '@INPUT@', gnetworking_h, ])
 
+gioenumtypes_dep = declare_dependency(sources : [gioenumtypes_h])
+
+# inotify
+if glib_conf.has('HAVE_SYS_INOTIFY_H') and have_func_inotify_init1
+  subdir('inotify')
+  internal_deps += [ inotify_lib ]
+endif
+
+# kevent
+if have_func_kqueue and have_func_kevent
+  subdir('kqueue')
+  internal_deps += [ kqueue_lib ]
+endif
+
+if host_machine.system() == 'windows'
+  subdir('win32')
+  internal_deps += [ giowin32_lib ]
+endif
+
+# FIXME: FAM support
+#if HAVE_FAM
+#  subdir('fam')
+#endif
+
 libgio = shared_library('gio',
   gioenumtypes_h, gioenumtypes_c, gnetworking_h, gio_sources,
   version : glib_version,
   soversion : interface_version,
   install : true,
   include_directories : inc_dirs,
-  link_with : [ libglib, libgobject, libgmodule ] + internal_deps,
+  link_with : internal_deps,
   #libgio_2_0_la_LDFLAGS = $(GLIB_LINK_FLAGS)',
   #  '$(gio_win32_res_ldflag)',
   #  '-version-info $(LT_CURRENT):$(LT_REVISION):$(LT_AGE)',
@@ -783,9 +785,12 @@ libgio = shared_library('gio',
   #$(GLIB_LIBS)
   #$(XATTR_LIBS)
   #$(NETWORK_LIBS)
-  dependencies : [ libz_dep, libdl_dep ] + platform_deps + network_libs,
+  dependencies : [libz_dep, libdl_dep, libglib_dep, libgobject_dep, libgmodule_dep] + platform_deps + network_libs,
   c_args : gio_c_args
 )
+
+libgio_dep = declare_dependency(link_with : libgio,
+  include_directories : ['gio'])
 
 # gresource tool
 libelf = dependency('libelf', version : '>= 0.8.12', required : false)
@@ -795,8 +800,7 @@ endif
 executable('gresource', 'gresource-tool.c',
   include_directories : inc_dirs,
   c_args : [ '-DHAVE_CONFIG_H=1' ],
-  link_with : [ libgio, libgobject, libgmodule, libglib ],
-  dependencies : libelf,
+  dependencies : [libelf, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep],
 )
 
 if host_machine.system() != 'windows'

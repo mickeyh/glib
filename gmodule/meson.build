@@ -31,7 +31,7 @@ elif host_machine.system() == 'aix'
 elif cc.links(dlopen_dlsym_test_code, name : 'dlopen() and dlsym() in system libraries')
   g_module_impl = 'G_MODULE_IMPL_DL'
 # NSLinkModule (dyld) in system libraries (Darwin)
-elif cc.has_function('NSLinkModule', prefix : '#include <mach-o/dyld.h>', name : 'NSLinkModule')
+elif cc.has_function('NSLinkModule')
   g_module_impl = 'G_MODULE_IMPL_DYLD'
   g_module_need_uscore = 1
 elif cc.links(dlopen_dlsym_test_code, args : '-ldl', name : 'dlopen() and dlsym() in libdl')
@@ -55,7 +55,7 @@ if g_module_impl == 'G_MODULE_IMPL_DL'
     endif
   endif
 
-  if cc.has_function('dlerror', prefix : '#include <dlfcn.h>', args : g_module_lib_args, name : 'dlerror')
+  if cc.has_function('dlerror', args : g_module_lib_args)
     g_module_have_dlerror = 1
   endif
 endif
@@ -84,7 +84,8 @@ libgmodule = shared_library('gmodule',
   soversion : interface_version,
   install : true,
   include_directories : inc_dirs,
-  link_with : libglib,
-  dependencies : libdl_dep,
+  dependencies : [libdl_dep, libglib_dep],
   c_args : ['-DG_LOG_DOMAIN="GModule"', '-DG_DISABLE_DEPRECATED' ],
 )
+
+libgmodule_dep = declare_dependency(link_with : libgmodule)

@@ -53,13 +53,16 @@ gobject_c_sources = [
 ]
 
 libgobject = shared_library('gobject',
-sources : [ gobject_c_sources ],
-version : glib_version,
-soversion : interface_version,
-install : true,
-include_directories : inc_dirs,
-link_with : libglib,
-dependencies : libffi_dep,
-c_args : ['-DG_LOG_DOMAIN="GLib-GObject"', '-DGOBJECT_COMPILATION' ])
+  sources : [gobject_c_sources],
+  version : glib_version,
+  soversion : interface_version,
+  install : true,
+  include_directories : inc_dirs,
+  link_with : libglib,
+  dependencies : [libffi_dep],
+  c_args : ['-DG_LOG_DOMAIN="GLib-GObject"', '-DGOBJECT_COMPILATION'])
+
+libgobject_dep = declare_dependency(link_with : libgobject,
+  include_directories : ['gobject'])
 
 subdir('tests')
