@@ -25,7 +25,7 @@ pcre_sources = [
 libpcre = static_library('pcre',
   sources : [pcre_sources],
   install : false,
-  include_directories : inc_dirs,
+  include_directories : [configinc, glibinc],
   dependencies : [],
   c_args : ['-DG_LOG_DOMAIN="GLib-GRegex"',
             '-DHAVE_MEMMOVE',

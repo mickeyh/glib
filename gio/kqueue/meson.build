@@ -11,6 +11,6 @@ kqueue_sources = [
 
 kqueue_lib = static_library('kqueue',
   sources : kqueue_sources,
-  include_directories : inc_dirs,
+  include_directories : configinc,
   c_args : [ '-DHAVE_CONFIG_H', '-fPIC', '-DG_DISABLE_DEPRECATED' ] + gio_c_args)
 
