@@ -13,8 +13,8 @@ host_system = host_machine.system()
 #add_global_arguments('-Werror', language : 'c') # FIXME
 
 major_version = 2
-minor_version = 47
-micro_version = 6
+minor_version = 48
+micro_version = 0
 interface_version = 2 # FIXME
 
 glib_version = meson.project_version()
@@ -34,6 +34,7 @@ glibconfig_conf = configuration_data()
 # use them later in test programs (autoconf does this automatically)
 glib_conf_prefix = ''
 
+glib_conf.set('GLIB_VERSION', glib_version)
 glib_conf.set('GLIB_MAJOR_VERSION', major_version)
 glib_conf.set('GLIB_MINOR_VERSION', minor_version)
 glib_conf.set('GLIB_MICRO_VERSION', micro_version)
