@@ -52,7 +52,7 @@ gobject_c_sources = [
   'gvaluetypes.c',
 ]
 
-libgobject = shared_library('gobject',
+libgobject = shared_library('gobject-2.0',
   sources : [gobject_c_sources],
   version : glib_version,
   soversion : interface_version,

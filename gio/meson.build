@@ -660,7 +660,7 @@ endif
 #  subdir('fam')
 #endif
 
-libgio = shared_library('gio',
+libgio = shared_library('gio-2.0',
   gioenumtypes_h, gioenumtypes_c, gnetworking_h, gio_sources,
   version : glib_version,
   soversion : interface_version,
