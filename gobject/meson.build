@@ -52,6 +52,16 @@ gobject_c_sources = [
   'gvaluetypes.c',
 ]
 
+perl = find_program('perl')
+glib_mkenums_conf = configuration_data()
+glib_mkenums_conf.set('GLIB_VERSION', glib_version)
+glib_mkenums_conf.set('PERL_PATH', perl.path())
+
+glib_mkenums = configure_file(input : 'glib-mkenums.in',
+  output : 'glib-mkenums',
+  install : true,
+  install_dir : 'bin', configuration : glib_mkenums_conf)
+
 libgobject = shared_library('gobject-2.0',
   sources : [gobject_c_sources],
   version : glib_version,
