@@ -50,6 +50,13 @@ glib_conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
 glib_conf.set('ENABLE_NLS', 1)
 glib_conf.set('HAVE_GOOD_PRINTF', 1) # FIXME
 
+# Variables used in glib-gettextize
+glib_conf.set('PACKAGE', '"glib"')
+glib_conf.set('VERSION', '"@0@"'.format(meson.project_version()))
+glib_conf.set('prefix', '"@0@"'.format(glib_prefix))
+glib_conf.set('datadir', '"@0@"'.format(glib_datadir))
+glib_conf.set('datarootdir', '"@0@"'.format(glib_datadir))
+
 glib_conf.set('_GNU_SOURCE', 1)
 
 if host_system == 'windows'
@@ -1224,13 +1231,21 @@ if host_system == 'windows'
   winsock2 = cc.find_library('ws2_32')
 endif
 
+python = find_program('python3', required : false)
+if not python.found()
+  # All our scripts are compatible with python 2, so it's ok if this is Python 2
+  # Also, we don't check for 'python2' because if the user doesn't have Python
+  # installed, we want them to see that we want 'python', not 'python2'.
+  python = find_program('python')
+endif
+
 # FIXME: defines in config.h that are not actually used anywhere
 # (we add them for now to minimise the diff)
 glib_conf.set('HAVE_DLFCN_H', 1)
 glib_conf.set('__EXTENSIONS__', 1)
 glib_conf.set('STDC_HEADERS', 1)
 # THREADS_NONE
-glib_conf.set('SIZEOF___INT64', 0)
+glib_conf.set('SIZEOF___INT64', 8)
 
 subdir('glib')
 subdir('gobject')
@@ -1238,4 +1253,14 @@ subdir('gthread')
 subdir('gmodule')
 subdir('gio')
 
-configure_file(input : 'config.h.meson', output : 'config.h', configuration : glib_conf)
+configure_file(input : 'config.h.meson',
+  output : 'config.h',
+  configuration : glib_conf)
+
+# Install glib-gettextize executable
+# FIXME: Set permissions
+configure_file(input : 'glib-gettextize.in',
+  install : true,
+  install_dir : 'bin',
+  output : 'glib-gettextize',
+  configuration : glib_conf)

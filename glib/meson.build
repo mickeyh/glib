@@ -187,10 +187,6 @@ glib_sources = [
 'gwakeup.c',
 'gprintf.c',]
 
-if cc.get_id() != 'msvc'
-  glib_sources += ['gtester.c']
-endif
-
 if host_system == 'windows'
   thread_src = ['gthread-win32.c']
   plat_src = ['gwin32.c', 'gspawn-win32.c', 'giowin32.c']
@@ -223,28 +219,30 @@ if host_system == 'windows'
       install : true,
       c_args : ['-DHAVE_CONFIG_H=1'],
       include_directories : configinc,
-      dependencies : [libglib_dep],
-    )
+      dependencies : [libglib_dep])
     executable('gspawn-win32-helper-console', 'gspawn-win32-helper.c',
       install : true,
       c_args : ['-DHAVE_CONFIG_H=1', '-DHELPER_CONSOLE'],
       include_directories : configinc,
-      dependencies : [libglib_dep],
-    )
+      dependencies : [libglib_dep])
   else
     executable('gspawn-win64-helper', 'gspawn-win32-helper.c',
       install : true,
       c_args : ['-DHAVE_CONFIG_H=1'],
       include_directories : configinc,
-      dependencies : [libglib_dep],
-    )
+      dependencies : [libglib_dep])
     executable('gspawn-win64-helper-console', 'gspawn-win32-helper.c',
       install : true,
       c_args : ['-DHAVE_CONFIG_H=1', '-DHELPER_CONSOLE'],
       include_directories : configinc,
-      dependencies : [libglib_dep],
-    )
+      dependencies : [libglib_dep])
   endif
+else
+  executable('gtester', 'gtester.c',
+    install : true,
+    c_args : ['-DHAVE_CONFIG_H=1'],
+    include_directories : configinc,
+    dependencies : [libglib_dep])
 endif
 
 # gtester doesn't work on native windows
