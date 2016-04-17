@@ -1,10 +1,3 @@
-#FIXME
-#if host_system == 'windows'
-#  plat_src = []
-#else
-#  plat_src = []
-#endif
-
 gobject_install_headers = [
   'gobject-autocleanups.h',
   'glib-types.h',
@@ -52,16 +45,6 @@ gobject_c_sources = [
   'gvaluetypes.c',
 ]
 
-perl = find_program('perl')
-glib_mkenums_conf = configuration_data()
-glib_mkenums_conf.set('GLIB_VERSION', glib_version)
-glib_mkenums_conf.set('PERL_PATH', perl.path())
-
-glib_mkenums = configure_file(input : 'glib-mkenums.in',
-  output : 'glib-mkenums',
-  install : true,
-  install_dir : 'bin', configuration : glib_mkenums_conf)
-
 libgobject = shared_library('gobject-2.0',
   sources : [gobject_c_sources],
   version : glib_version,
@@ -73,5 +56,33 @@ libgobject = shared_library('gobject-2.0',
 
 libgobject_dep = declare_dependency(link_with : libgobject,
   include_directories : gobjectinc)
+
+# Installed executables
+perl = find_program('perl')
+glib_mkenums_conf = configuration_data()
+glib_mkenums_conf.set('GLIB_VERSION', glib_version)
+glib_mkenums_conf.set('PERL_PATH', perl.path())
+
+# FIXME: Set permissions
+glib_mkenums = configure_file(input : 'glib-mkenums.in',
+  output : 'glib-mkenums',
+  install : true,
+  install_dir : 'bin', configuration : glib_mkenums_conf)
+
+executable('gobject-query', 'gobject-query.c',
+  install : true,
+  c_args : ['-DHAVE_CONFIG_H=1'],
+  dependencies : [libglib_dep, libgobject_dep])
+
+gmarshal_strings = custom_target('gmarshal.strings',
+    input : ['gmarshal-list-to-strings.py', 'gmarshal.list'],
+    output : ['gmarshal.strings'],
+    command : [python, '@INPUT0@', '@INPUT1@', '@OUTPUT@'])
+
+executable('glib-genmarshal', gmarshal_strings, 'glib-genmarshal.c',
+  install : true,
+  c_args : ['-DHAVE_CONFIG_H=1'],
+  depends : [],
+  dependencies : [libglib_dep, libgobject_dep])
 
 subdir('tests')

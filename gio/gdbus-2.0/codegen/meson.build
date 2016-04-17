@@ -8,14 +8,6 @@ gdbus_codegen_files = [
   'utils.py',
 ]
 
-python = find_program('python3', required : false)
-if not python.found()
-  python = find_program('python', required : false)
-  if not python.found()
-    python = find_program('python2', required : false)
-  endif
-endif
-
 gdbus_codegen_conf = configuration_data()
 gdbus_codegen_conf.set('prefix', glib_prefix)
 gdbus_codegen_conf.set('datadir', glib_datadir)
@@ -23,10 +15,12 @@ gdbus_codegen_conf.set('datarootdir', glib_datadir)
 gdbus_codegen_conf.set('VERSION', glib_version)
 gdbus_codegen_conf.set('PYTHON', python.path())
 
+# Install gdbus-codegen executable
+# FIXME: Set permissions
 gdbus_codegen = configure_file(input : 'gdbus-codegen.in',
   output : 'gdbus-codegen',
   install : true,
-  install_dir : 'share/glib-2.0/codegen', configuration : gdbus_codegen_conf)
+  install_dir : 'bin', configuration : gdbus_codegen_conf)
 
 configure_file(input : 'config.py.in',
   output : 'config.py',
