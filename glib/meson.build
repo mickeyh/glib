@@ -1,4 +1,7 @@
-configure_file(input : 'glibconfig.h.in', output : 'glibconfig.h', configuration : glibconfig_conf)
+configure_file(input : 'glibconfig.h.in', output : 'glibconfig.h',
+  install : true,
+  install_dir : 'lib/glib-2.0/include',
+  configuration : glibconfig_conf)
 
 subdir('libcharset')
 if not pcre.found()
