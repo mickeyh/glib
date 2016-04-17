@@ -99,7 +99,7 @@ gnetworking_h_conf.set('NAMESER_COMPAT_INCLUDE', gnetworking_h_nameser_compat_in
 
 gnetworking_h = configure_file(input : 'gnetworking.h.in',
                                output : 'gnetworking.h',
-                               install_dir : 'include/glib-2.0/gio/',
+                               install_dir : 'include/glib-2.0/gio',
                                configuration : gnetworking_h_conf)
 
 gdbus_headers = [
