@@ -1,11 +1,8 @@
 gio_c_args = [
   '-DG_LOG_DOMAIN="GLib-GIO"',
   '-DGIO_COMPILATION',
-  '-DGIO_MODULE_DIR="@0@/gio/modules"'.format(get_option('libdir')),
+  '-DGIO_MODULE_DIR="@0@"'.format(glib_giomodulesreldir),
 ]
-
-# Generate gdbus-codegen
-subdir('gdbus-2.0/codegen')
 
 gnetworking_h_conf = configuration_data()
 
@@ -94,6 +91,12 @@ if host_system != 'windows'
   endif
 endif
 
+network_args_string = ''
+foreach arg : network_args
+  network_args_string += arg + ' '
+endforeach
+glib_conf.set('NETWORK_LIBS', network_args_string)
+
 gnetworking_h_conf.set('WSPIAPI_INCLUDE', gnetworking_h_wspiapi_include)
 gnetworking_h_conf.set('NAMESER_COMPAT_INCLUDE', gnetworking_h_nameser_compat_include)
 
@@ -156,6 +159,9 @@ gdbus_sources = [
   'gdbusobjectmanagerserver.c',
   'gtestdbus.c',
 ]
+
+# Generate gdbus-codegen
+subdir('gdbus-2.0/codegen')
 
 # Generate gdbus-generated.{c,h}
 gdbus_daemon_generated = custom_target('gdbus-daemon-generated',

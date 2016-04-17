@@ -23,7 +23,7 @@ glib_deprecated_headers = [
   'deprecated/grel.h',
   'deprecated/gthread.h',
 ]
-install_headers(glib_deprecated_headers, subdir : 'glib-2.0/deprecated/')
+install_headers(glib_deprecated_headers, subdir : 'glib-2.0/glib/deprecated/')
 
 glib_sub_headers = [
   'glib-autocleanups.h',

@@ -25,7 +25,12 @@ gmoduleinc = include_directories('gmodule')
 gioinc = include_directories('gio')
 
 glib_prefix = get_option('prefix')
+glib_libdir = glib_prefix + '/' + get_option('libdir')
 glib_datadir = glib_prefix + '/share'
+glib_includedir = glib_prefix + '/include'
+
+glib_pkgconfigreldir = get_option('libdir') + '/pkgconfig'
+glib_giomodulesreldir = get_option('libdir') + '/gio/modules'
 
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
@@ -50,12 +55,16 @@ glib_conf.set('PACKAGE_VERSION', '"@0@"'.format(meson.project_version()))
 glib_conf.set('ENABLE_NLS', 1)
 glib_conf.set('HAVE_GOOD_PRINTF', 1) # FIXME
 
-# Variables used in glib-gettextize
-glib_conf.set('PACKAGE', '"glib"')
-glib_conf.set('VERSION', '"@0@"'.format(meson.project_version()))
-glib_conf.set('prefix', '"@0@"'.format(glib_prefix))
-glib_conf.set('datadir', '"@0@"'.format(glib_datadir))
-glib_conf.set('datarootdir', '"@0@"'.format(glib_datadir))
+# Variables used in glib-gettextize and pkg-config files
+# These should not contain " quotes around the values
+glib_conf.set('PACKAGE', 'glib')
+glib_conf.set('VERSION', meson.project_version())
+glib_conf.set('prefix', glib_prefix)
+glib_conf.set('exec_prefix', glib_prefix)
+glib_conf.set('libdir', glib_libdir)
+glib_conf.set('includedir', glib_includedir)
+glib_conf.set('datadir', glib_datadir)
+glib_conf.set('datarootdir', glib_datadir)
 
 glib_conf.set('_GNU_SOURCE', 1)
 
@@ -1247,20 +1256,63 @@ glib_conf.set('STDC_HEADERS', 1)
 # THREADS_NONE
 glib_conf.set('SIZEOF___INT64', 8)
 
+# Various substs needed for our pkg-config files
+# FIXME: Derive these from the dependency() objects (Meson support needed)
+glib_conf.set('ZLIB_LIBS', '-lz')
+glib_conf.set('LIBFFI_LIBS', '-lffi')
+glib_conf.set('INTLLIBS', '-lintl')
+glib_conf.set('ICONV_LIBS', '-liconv')
+if pcre.found()
+  glib_conf.set('PCRE_LIBS', '-lpcre')
+endif
+glib_conf.set('GIO_MODULE_DIR', glib_giomodulesreldir)
+# FIXME: Missing:
+# @G_MODULE_LIBS@ @SELINUX_LIBS@ @COCOA_LIBS@ @CARBON_LIBS@ @G_LIBS_EXTRA@
+# @PCRE_REQUIRES@ @GLIB_EXTRA_CFLAGS@ @G_THREAD_CFLAGS@
+
 subdir('glib')
 subdir('gobject')
 subdir('gthread')
 subdir('gmodule')
 subdir('gio')
 
-configure_file(input : 'config.h.meson',
-  output : 'config.h',
-  configuration : glib_conf)
+# Configure and install pkg-config files
+pc_files = [
+  'gobject-2.0.pc',
+  'glib-2.0.pc',
+  'gthread-2.0.pc',
+  'gmodule-2.0.pc',
+  'gmodule-export-2.0.pc',
+  'gmodule-no-export-2.0.pc',
+  'gio-2.0.pc',
+]
+if host_system == 'windows'
+  pc_files += ['gio-windows-2.0.pc']
+else
+  pc_files += ['gio-unix-2.0.pc']
+endif
+
+foreach pc : pc_files
+  configure_file(input : pc + '.in',
+    install : true,
+    install_dir : glib_pkgconfigreldir,
+    output : pc,
+    configuration : glib_conf)
+endforeach
+
+# NOTE: We skip glib-zip.in because the filenames it assumes don't match ours
 
 # Install glib-gettextize executable
-# FIXME: Set permissions
 configure_file(input : 'glib-gettextize.in',
   install : true,
   install_dir : 'bin',
   output : 'glib-gettextize',
+  configuration : glib_conf)
+
+# Install m4 macros that other projects use
+install_data('m4macros/glib-2.0.m4', 'm4macros/glib-gettext.m4', 'm4macros/gsettings.m4',
+  install_dir : 'share/aclocal')
+
+configure_file(input : 'config.h.meson',
+  output : 'config.h',
   configuration : glib_conf)
