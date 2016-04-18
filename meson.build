@@ -28,9 +28,9 @@ glib_prefix = get_option('prefix')
 glib_libdir = glib_prefix + '/' + get_option('libdir')
 glib_datadir = glib_prefix + '/share'
 glib_includedir = glib_prefix + '/include'
+glib_giomodulesdir = glib_libdir + '/gio/modules'
 
 glib_pkgconfigreldir = get_option('libdir') + '/pkgconfig'
-glib_giomodulesreldir = get_option('libdir') + '/gio/modules'
 
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
@@ -1265,7 +1265,7 @@ glib_conf.set('ICONV_LIBS', '-liconv')
 if pcre.found()
   glib_conf.set('PCRE_LIBS', '-lpcre')
 endif
-glib_conf.set('GIO_MODULE_DIR', glib_giomodulesreldir)
+glib_conf.set('GIO_MODULE_DIR', '${libdir}/gio/modules')
 # FIXME: Missing:
 # @G_MODULE_LIBS@ @SELINUX_LIBS@ @COCOA_LIBS@ @CARBON_LIBS@ @G_LIBS_EXTRA@
 # @PCRE_REQUIRES@ @GLIB_EXTRA_CFLAGS@ @G_THREAD_CFLAGS@

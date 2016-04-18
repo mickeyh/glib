@@ -1,7 +1,7 @@
 gio_c_args = [
   '-DG_LOG_DOMAIN="GLib-GIO"',
   '-DGIO_COMPILATION',
-  '-DGIO_MODULE_DIR="@0@"'.format(glib_giomodulesreldir),
+  '-DGIO_MODULE_DIR="@0@"'.format(glib_giomodulesdir),
 ]
 
 gnetworking_h_conf = configuration_data()
