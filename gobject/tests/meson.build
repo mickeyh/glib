@@ -38,22 +38,18 @@ endforeach
 
 # The marshalers test requires running a binary, so we cannot build it when
 # cross-compiling
-if not meson.is_cross_build()
-  # FIXME: need to pass this as argument to the genmarshal script
-  # and somehow we need to specify it as build dep of the custom targets
-  # lib_genmarshal = meson.build_root() + '/gobject/glib-genmarshal'
-
+if not meson.has_exe_wrapper()
   genmarshal = find_program('gobject_test_marshal.py')
 
   marshalers_h = custom_target('marshalers_h',
     output : 'marshalers.h',
     input : 'marshalers.list',
-    command : [ genmarshal, '@INPUT@', '@OUTPUT@' ],
+    command : [genmarshal, glib_genmarshal, '@INPUT@', '@OUTPUT@'],
   )
   marshalers_c = custom_target('marshalers_c',
     output : 'marshalers.c',
     input : 'marshalers.list',
-    command : [ genmarshal, '@INPUT@', '@OUTPUT@' ],
+    command : [genmarshal, glib_genmarshal, '@INPUT@', '@OUTPUT@'],
   )
 
   exe = executable('signals',
