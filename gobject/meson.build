@@ -79,7 +79,8 @@ gmarshal_strings = custom_target('gmarshal.strings',
     output : ['gmarshal.strings'],
     command : [python, '@INPUT0@', '@INPUT1@', '@OUTPUT@'])
 
-executable('glib-genmarshal', gmarshal_strings, 'glib-genmarshal.c',
+glib_genmarshal = executable('glib-genmarshal',
+  gmarshal_strings, 'glib-genmarshal.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'],
   depends : [],
