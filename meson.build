@@ -1174,6 +1174,26 @@ if host_system == 'windows'
 else
   glibconfig_conf.set('g_threads_impl_def', 'POSIX')
   glib_conf.set('THREADS_POSIX', 1)
+  if cc.has_header_symbol('pthread.h', 'pthread_attr_setstacksize')
+    glib_conf.set('HAVE_PTHREAD_ATTR_SETSTACKSIZE', 1)
+  endif
+  if cc.has_header_symbol('pthread.h', 'pthread_condattr_setclock')
+    glib_conf.set('HAVE_PTHREAD_CONDATTR_SETCLOCK', 1)
+  endif
+  if cc.has_header_symbol('pthread.h', 'pthread_cond_timedwait_relative_np')
+    glib_conf.set('HAVE_PTHREAD_COND_TIMEDWAIT_RELATIVE_NP', 1)
+  endif
+  if cc.links('''#include <pthread.h>
+                 int main() {
+                   pthread_setname_np("example");
+                 }''', name : 'pthread_setname_np(const char*)')
+    glib_conf.set('HAVE_PTHREAD_SETNAME_NP_WITHOUT_TID', 1)
+  elif cc.links('''#include <pthread.h>
+                 int main() {
+                   pthread_setname_np(pthread_self(), "example");
+                 }''', name : 'pthread_setname_np(pthread_t, const char*)')
+    glib_conf.set('HAVE_PTHREAD_SETNAME_NP_WITH_TID', 1)
+  endif
 endif
 
 # FIXME: how to do this when cross-compiling?
