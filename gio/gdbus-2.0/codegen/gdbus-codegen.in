@@ -24,8 +24,14 @@ import os
 import sys
 
 srcdir = os.getenv('UNINSTALLED_GLIB_SRCDIR', None)
+if srcdir is None:
+    srcdir = '@abs_top_srcdir@'
 
-if srcdir is not None:
+builddir = os.environ.get('UNINSTALLED_GLIB_BUILDDIR')
+if builddir is None:
+    os.environ['UNINSTALLED_GLIB_BUILDDIR'] = '@abs_top_builddir@'
+
+if srcdir:
     path = os.path.join(srcdir, 'gio', 'gdbus-2.0')
 elif os.name == 'nt':
     # Makes gdbus-codegen 'relocatable' at runtime on Windows.
