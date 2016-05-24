@@ -1075,7 +1075,8 @@ int main(int argc, char **argv) {
   return 0;
 }'''
 elif has_winsock2
-  templ = '''#include <stdio.h>
+  templ = '''#define _WIN32_WINNT 0x0600
+#include <stdio.h>
 #include <winsock2.h>
 int main(int argc, char **argv) {
   printf("%d\n", (int)@0@);
@@ -1086,18 +1087,12 @@ else
   error('FIX POLL* defines')
 endif
 
-value_POLLIN = cc.run(templ.format('POLLIN'),
-		      args : '-D_WIN32_WINNT=0x0600').stdout().strip()
-value_POLLOUT = cc.run(templ.format('POLLOUT'),
-		       args : '-D_WIN32_WINNT=0x0600').stdout().strip()
-value_POLLPRI = cc.run(templ.format('POLLPRI'),
-		       args : '-D_WIN32_WINNT=0x0600').stdout().strip()
-value_POLLERR = cc.run(templ.format('POLLERR'),
-		       args : '-D_WIN32_WINNT=0x0600').stdout().strip()
-value_POLLHUP = cc.run(templ.format('POLLHUP'),
-		       args : '-D_WIN32_WINNT=0x0600').stdout().strip()
-value_POLLNVAL = cc.run(templ.format('POLLNVAL'),
-		        args : '-D_WIN32_WINNT=0x0600').stdout().strip()
+value_POLLIN = cc.run(templ.format('POLLIN')).stdout().strip()
+value_POLLOUT = cc.run(templ.format('POLLOUT')).stdout().strip()
+value_POLLPRI = cc.run(templ.format('POLLPRI')).stdout().strip()
+value_POLLERR = cc.run(templ.format('POLLERR')).stdout().strip()
+value_POLLHUP = cc.run(templ.format('POLLHUP')).stdout().strip()
+value_POLLNVAL = cc.run(templ.format('POLLNVAL')).stdout().strip()
 
 glibconfig_conf.set('g_pollin', value_POLLIN)
 glibconfig_conf.set('g_pollout', value_POLLOUT)
