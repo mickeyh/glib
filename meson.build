@@ -1254,7 +1254,8 @@ glib_conf.set('USE_SYSTEM_PCRE', pcre.found())
 libm = cc.find_library('m', required : false)
 libffi_dep = dependency('libffi', version : '>= 3.0.0')
 libz_dep = dependency('zlib')
-libintl = cc.find_library('intl')
+# Only used on non-glibc targets
+libintl = cc.find_library('intl', required : false)
 
 if host_system == 'windows'
   winsock2 = cc.find_library('ws2_32')
