@@ -687,6 +687,7 @@ libgio = shared_library('gio-2.0',
 )
 
 libgio_dep = declare_dependency(link_with : libgio,
+  dependencies : [gioenumtypes_dep],
   # We sadly need to export configinc here because everyone includes <gio/*.h>
   include_directories : [configinc, gioinc])
 
@@ -705,49 +706,42 @@ gconstructor_as_data_h = custom_target('gconstructor_as_data.h',
 executable('gresource', 'gresource-tool.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'],
-  dependencies : [libelf, libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libelf, libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 
 executable('gio-querymodules', 'gio-querymodules.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'] + gio_c_args,
-  dependencies : [gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 
 executable('glib-compile-schemas',
   [gconstructor_as_data_h, 'gvdb/gvdb-builder.c', 'glib-compile-schemas.c'],
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'],
-  dependencies : [libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 
 executable('glib-compile-resources',
   [gconstructor_as_data_h, 'gvdb/gvdb-builder.c', 'glib-compile-resources.c'],
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'] + gio_c_args,
-  dependencies : [libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 
 executable('gsettings', 'gsettings-tool.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'] + gio_c_args,
-  dependencies : [libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 install_data(['gschema.dtd', 'gschema.loc', 'gschema.its'],
   install_dir : 'share/glib-2.0/schemas')
 
 executable('gdbus', 'gdbus-tool.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'] + gio_c_args,
-  dependencies : [libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                  libgmodule_dep, libglib_dep])
+  dependencies : [libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 
 if host_system != 'windows'
   executable('gapplication', 'gapplication-tool.c',
     install : true,
     c_args : ['-DHAVE_CONFIG_H=1'] + gio_c_args,
-    dependencies : [libintl, gioenumtypes_dep, libgio_dep, libgobject_dep,
-                    libgmodule_dep, libglib_dep])
+    dependencies : [libintl, libgio_dep, libgobject_dep, libgmodule_dep, libglib_dep])
 endif
 
 if host_system != 'windows'
