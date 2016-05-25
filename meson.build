@@ -1237,11 +1237,14 @@ endif
 if host_system == 'windows'
   libiconv = []
   glib_conf.set('USE_LIBICONV_NATIVE', true)
+  # Check C library
 elif cc.has_function('iconv_open')
   libiconv = []
+  # Check for libiconv
 elif cc.has_header_symbol('iconv.h', 'libiconv_open')
   glib_conf.set('USE_LIBICONV_GNU', true)
   libiconv = [cc.find_library('iconv')]
+  # Check for a custom iconv implementation
 elif cc.has_header_symbol('iconv.h', 'iconv_open')
   glib_conf.set('USE_LIBICONV_NATIVE', true)
   libiconv = [cc.find_library('iconv')]
