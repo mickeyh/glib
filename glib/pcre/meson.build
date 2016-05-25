@@ -43,7 +43,8 @@ libpcre = static_library('pcre',
             '-DPCRE_STATIC',
             '-UBSR_ANYCRLF',
             '-UEBCDIC',
-            '-DGLIB_COMPILATION']
+            '-DGLIB_COMPILATION',
+	    '-fPIC',]
 )
 
 pcre = declare_dependency(link_with : libpcre)
