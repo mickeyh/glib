@@ -672,8 +672,8 @@ endif
 
 libgio = shared_library('gio-2.0',
   gioenumtypes_h, gioenumtypes_c, gnetworking_h, gio_sources,
-  version : glib_version,
-  soversion : interface_version,
+  version : library_version,
+  soversion : soversion,
   install : true,
   include_directories : [configinc, gioinc],
   link_with : internal_deps,

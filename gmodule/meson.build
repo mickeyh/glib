@@ -86,8 +86,8 @@ install_headers(['gmodule.h'], subdir : 'glib-2.0/')
 
 libgmodule = shared_library('gmodule-2.0',
   sources : ['gmodule.c'],
-  version : glib_version,
-  soversion : interface_version,
+  version : library_version,
+  soversion : soversion,
   install : true,
   include_directories : [configinc, gmoduleinc],
   dependencies : [libdl_dep, libglib_dep],
