@@ -199,8 +199,8 @@ endif
 
 libglib = shared_library('glib-2.0',
   sources : [deprecated_sources, glib_sources, thread_src, plat_src],
-  version : glib_version,
-  soversion : interface_version,
+  version : library_version,
+  soversion : soversion,
   install : true,
   include_directories : configinc,
   link_with : charset_lib,

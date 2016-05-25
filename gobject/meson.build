@@ -47,8 +47,8 @@ gobject_c_sources = [
 
 libgobject = shared_library('gobject-2.0',
   sources : [gobject_c_sources],
-  version : glib_version,
-  soversion : interface_version,
+  version : library_version,
+  soversion : soversion,
   install : true,
   include_directories : [configinc],
   dependencies : [libffi_dep, libglib_dep],

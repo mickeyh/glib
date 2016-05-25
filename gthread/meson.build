@@ -2,8 +2,8 @@
 # has been moved into glib now
 libgthread = shared_library('gthread-2.0',
   sources : [ 'gthread-impl.c' ],
-  version : glib_version,
-  soversion : interface_version,
+  version : library_version,
+  soversion : soversion,
   install : true,
   dependencies : [libglib_dep],
   c_args : ['-DG_LOG_DOMAIN="GThread"' ],
