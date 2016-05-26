@@ -9,8 +9,6 @@ gdbus_codegen_files = [
 ]
 
 gdbus_codegen_conf = configuration_data()
-gdbus_codegen_conf.set('abs_top_srcdir', meson.source_root())
-gdbus_codegen_conf.set('abs_top_builddir', meson.build_root())
 gdbus_codegen_conf.set('prefix', glib_prefix)
 gdbus_codegen_conf.set('datadir', glib_datadir)
 gdbus_codegen_conf.set('datarootdir', glib_datadir)
