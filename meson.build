@@ -1238,17 +1238,18 @@ endif
 # We should never use the MinGW C library's iconv. On Windows we use the
 # GNU implementation that ships with MinGW.
 
+# On Windows, just always use the built-in implementation
 if host_system == 'windows'
   libiconv = []
   glib_conf.set('USE_LIBICONV_NATIVE', true)
-  # Check C library
+# Check C library; never check MinGW C library
 elif cc.has_function('iconv_open')
   libiconv = []
-  # Check for libiconv
+# Check for libiconv
 elif cc.has_header_symbol('iconv.h', 'libiconv_open')
   glib_conf.set('USE_LIBICONV_GNU', true)
   libiconv = [cc.find_library('iconv')]
-  # Check for a custom iconv implementation
+# Check for a custom iconv implementation
 elif cc.has_header_symbol('iconv.h', 'iconv_open')
   glib_conf.set('USE_LIBICONV_NATIVE', true)
   libiconv = [cc.find_library('iconv')]
@@ -1292,7 +1293,9 @@ glib_conf.set('LIBFFI_LIBS', '-lffi')
 if libintl.found()
   glib_conf.set('INTLLIBS', '-lintl')
 endif
-glib_conf.set('ICONV_LIBS', '-liconv')
+if libiconv.length() != 0
+  glib_conf.set('ICONV_LIBS', '-liconv')
+endif
 if pcre.found()
   glib_conf.set('PCRE_LIBS', '-lpcre')
 endif
