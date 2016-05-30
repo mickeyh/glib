@@ -96,7 +96,7 @@ foreach test_name : glib_tests
     deps += [pcre]
   endif
   exe = executable(test_name, '@0@.c'.format(test_name),
-    c_args : test_cargs,
+    c_args : ['-DPCRE_STATIC'] + test_cargs,
     dependencies : deps,
     install : false,
   )
