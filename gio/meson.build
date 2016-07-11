@@ -626,6 +626,7 @@ gio_headers += settings_headers
 gio_headers += gdbus_headers
 install_headers(gio_headers, subdir : 'glib-2.0/gio/')
 
+perl = find_program('perl')
 gio_build_mkenum = find_program('build_mkenum.py')
 
 gioenumtypes_h = custom_target('gioenumtypes_h',
@@ -634,7 +635,7 @@ gioenumtypes_h = custom_target('gioenumtypes_h',
   install : true,
   install_dir : 'include/glib-2.0/gio/',
   depends : [],
-  command : [gio_build_mkenum, glib_mkenums,
+  command : [gio_build_mkenum, perl, glib_mkenums,
              '@OUTPUT@', meson.source_root(),
              '@INPUT@', gnetworking_h])
 
@@ -642,7 +643,7 @@ gioenumtypes_c = custom_target('gioenumtypes_c',
   output : 'gioenumtypes.c',
   input : gio_headers,
   depends : [gioenumtypes_h],
-  command : [gio_build_mkenum, glib_mkenums,
+  command : [gio_build_mkenum, perl, glib_mkenums,
              '@OUTPUT@', meson.source_root(),
              '@INPUT@', gnetworking_h])
 
