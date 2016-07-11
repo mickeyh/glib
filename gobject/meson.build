@@ -83,7 +83,6 @@ glib_genmarshal = executable('glib-genmarshal',
   gmarshal_strings, 'glib-genmarshal.c',
   install : true,
   c_args : ['-DHAVE_CONFIG_H=1'],
-  depends : [],
   dependencies : [libglib_dep, libgobject_dep])
 
 subdir('tests')
