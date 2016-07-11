@@ -311,7 +311,7 @@
  * fields through their offsets.
  */
 
-#if defined(__GNUC__)  && __GNUC__ >= 4
+#if (defined(__GNUC__)  && __GNUC__ >= 4) || (_MSC_VER >= 1400)
 #define G_STRUCT_OFFSET(struct_type, member) \
       ((glong) offsetof (struct_type, member))
 #else
