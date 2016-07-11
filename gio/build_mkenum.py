@@ -10,8 +10,9 @@ import sys, os, shutil, subprocess
 perl = sys.argv[1]
 glib_mkenums = sys.argv[2]
 ofilename = sys.argv[3]
+ofile_rel = os.path.basename(ofilename)
 template_file_dir = sys.argv[4]
-template_file_path = template_file_dir + '/' + ofilename + '.template'
+template_file_path = template_file_dir + '/' + ofile_rel + '.template'
 headers = sys.argv[5:]
 
 arg_array = ['--template', template_file_path]
