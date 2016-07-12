@@ -202,6 +202,8 @@ libglib = shared_library('glib-2.0',
   version : library_version,
   soversion : soversion,
   install : true,
+  # intl.lib is not compatible with SAFESEH
+  link_args : noseh_link_args,
   include_directories : configinc,
   link_with : charset_lib,
   dependencies : [pcre, thread_dep, libintl, librt] + libiconv + platform_deps,
