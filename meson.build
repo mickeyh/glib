@@ -103,7 +103,7 @@ if get_option('default_library') != 'static'
       add_global_arguments('-fvisibility=hidden', language : 'c')
     endif
   else
-    glib_conf.set('_GLIB_EXTERN', '__attribute__((visibility("default")))')
+    glib_conf.set('_GLIB_EXTERN', '__attribute__((visibility("default"))) extern')
     add_global_arguments('-fvisibility=hidden', language : 'c')
   endif
 endif
