@@ -2,7 +2,7 @@ project('glib', 'c', 'cpp',
   version : '2.48.0',
   meson_version : '>= 0.32.0',
   default_options : [ 'warning_level=1',
-                      'c_std=gnu99',
+                      'c_std=gnu89',
                       'buildtype=debugoptimized' ])
 
 cc = meson.get_compiler('c')
