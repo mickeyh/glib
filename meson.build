@@ -8,6 +8,21 @@ project('glib', 'c', 'cpp',
 cc = meson.get_compiler('c')
 cxx = meson.get_compiler('cpp')
 
+if cc.get_id() == 'msvc'
+  # Ignore several spurious warnings for things glib does very commonly
+  # If a warning is completely useless and spammy, use '/wdXXXX' to suppress it
+  # If a warning is harmless but hard to fix, use '/woXXXX' so it's shown once
+  # NOTE: Only add warnings here if you are sure they're spurious
+  add_global_arguments('/wd4244', '/wd4305', '/wd4035', '/wd4715', '/wd4116',
+    '/wd4046', '/wd4068', '/wo4090', language : 'c')
+  # Disable SAFESEH with MSVC for plugins and libs that use external deps that
+  # are built with MinGW
+  noseh_link_args = ['/SAFESEH:NO']
+else
+  noseh_link_args = []
+  # -mms-bitfields vs -fnative-struct ?
+endif
+
 host_system = host_machine.system()
 
 #add_global_arguments('-Werror', language : 'c') # FIXME
@@ -37,6 +52,9 @@ glib_giomodulesdir = glib_libdir + '/gio/modules'
 
 glib_pkgconfigreldir = get_option('libdir') + '/pkgconfig'
 
+########################
+# Configuration begins #
+########################
 glib_conf = configuration_data()
 glibconfig_conf = configuration_data()
 
@@ -76,20 +94,6 @@ glib_conf.set('_GNU_SOURCE', 1)
 if host_system == 'windows'
   # Poll doesn't work on devices on Windows
   glib_conf.set('BROKEN_POLL', true)
-endif
-
-if cc.get_id() == 'msvc'
-  # Ignore several spurious warnings for things glib does very commonly
-  # If a warning is completely useless and spammy, use '/wdXXXX' to suppress it
-  # If a warning is harmless but hard to fix, use '/woXXXX' so it's shown once
-  # NOTE: Only add warnings here if you are sure they're spurious
-  add_global_arguments('/wd4244', '/wd4305', '/wd4035', '/wd4715', '/wd4116',
-    '/wd4046', '/wd4068', '/wo4090', language : 'c')
-  # Disable SAFESEH with MSVC for plugins and libs that use external deps that
-  # are built with MinGW
-  noseh_link_args = ['/SAFESEH:NO']
-else
-  noseh_link_args = []
 endif
 
 # Detect and set symbol visibility
