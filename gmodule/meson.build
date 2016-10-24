@@ -48,7 +48,7 @@ if g_module_impl == 'G_MODULE_IMPL_DL'
   if cc.get_id() == 'msvc'
     message('Building for MSVC: assuming that symbols are prefixed with underscore')
     g_module_need_uscore = 1
-  elif not meson.has_exe_wrapper()
+  elif meson.has_exe_wrapper()
     # FIXME: communicate result via stdout instead of return value, so non-0 return is not printed in bold red
     rres = cc.run(dlopen_dlsym_test_code,
                   args : g_module_lib_args,
