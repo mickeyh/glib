@@ -57,8 +57,6 @@ libgobject = shared_library('gobject-2.0',
 libgobject_dep = declare_dependency(link_with : libgobject,
   include_directories : gobjectinc)
 
-# Installed executables
-perl = find_program('perl')
 glib_mkenums_conf = configuration_data()
 glib_mkenums_conf.set('GLIB_VERSION', glib_version)
 glib_mkenums_conf.set('PERL_PATH', perl.path())

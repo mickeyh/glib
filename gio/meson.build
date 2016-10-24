@@ -626,7 +626,6 @@ gio_headers += settings_headers
 gio_headers += gdbus_headers
 install_headers(gio_headers, subdir : 'glib-2.0/gio/')
 
-perl = find_program('perl')
 gio_build_mkenum = find_program('build_mkenum.py')
 
 gioenumtypes_h = custom_target('gioenumtypes_h',

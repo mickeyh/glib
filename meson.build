@@ -1276,6 +1276,9 @@ if host_system == 'windows'
   winsock2 = cc.find_library('ws2_32')
 endif
 
+# Needed for glib-mkenums
+perl = find_program('perl')
+
 python = find_program('python3', required : false)
 if not python.found()
   # All our scripts are compatible with python 2, so it's ok if this is Python 2
