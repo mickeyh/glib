@@ -823,20 +823,28 @@ glib_conf.set('ALIGNOF_GUINT32', guint32_align)
 
 if long_long_size == 8
   gint64 = 'long long'
-  gint64_modifier='"ll"'
-  gint64_format='"lli"'
-  guint64_format='"llu"'
   glib_extension=''
+  # On Windows, only long long is 8 bytes in length. MSVC supports both ll and
+  # I64 as format specifiers, but some versions of MinGW only support I64.
+  if host_system == 'windows'
+    gint64_modifier='"I64"'
+    gint64_format='"I64i"'
+    guint64_format='"I64u"'
+  else
+    gint64_modifier='"ll"'
+    gint64_format='"lli"'
+    guint64_format='"llu"'
+  endif
   gint64_constant='(val##LL)'
   guint64_constant='(val##ULL)'
   guint64_align = long_long_align
 endif
 if long_size == 8
   gint64 = 'long'
+  glib_extension=''
   gint64_modifier='"l"'
   gint64_format='"li"'
   guint64_format='"lu"'
-  glib_extension=''
   gint64_constant='(val##L)'
   guint64_constant='(val##UL)'
   guint64_align = long_align
