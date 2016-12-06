@@ -754,12 +754,22 @@ else
   ssizet_size = cc.sizeof('ssize_t')
 endif
 
+# On Windows, MSVC supports both ll and I64 as format specifiers for 64-bit
+# integers, but some versions (at least 4.7.x) of MinGW only support I64.
+if host_system == 'windows'
+  int64_m = '"I64'
+else
+  int64_m = '"ll'
+endif
+
 char_align = cc.alignment('char')
 short_align = cc.alignment('short')
 int_align = cc.alignment('int')
 voidp_align = cc.alignment('void*')
 long_align = cc.alignment('long')
 long_long_align = cc.alignment('long long')
+# NOTE: We don't check for size of __int64 because long long is guaranteed to
+# be 64-bit in C99, and it is available on all supported compilers
 sizet_align = cc.alignment('size_t')
 
 glib_conf.set('ALIGNOF_UNSIGNED_LONG', long_align)
@@ -773,47 +783,44 @@ glib_conf.set('SIZEOF_SIZE_T', sizet_size)
 glib_conf.set('SIZEOF_SSIZE_T', ssizet_size)
 glib_conf.set('SIZEOF_VOID_P', voidp_size)
 
-if long_size == 2
-  # configure.ac does not work if this is the case. So we don't either.
-  gint16 = 'long'
-endif
-if int_size == 2
-  gint16 = 'int'
-  gint16_modifier='""'
-  gint16_format='"i"'
-  guint16_format='"u"'
-endif
 if short_size == 2
   gint16 = 'short'
   gint16_modifier='"h"'
   gint16_format='"hi"'
   guint16_format='"hu"'
+elif int_size == 2
+  gint16 = 'int'
+  gint16_modifier='""'
+  gint16_format='"i"'
+  guint16_format='"u"'
+else
+  error('Compiler provides no native 16-bit integer type')
 endif
 glibconfig_conf.set('gint16', gint16)
 glibconfig_conf.set('gint16_modifier', gint16_modifier)
 glibconfig_conf.set('gint16_format', gint16_format)
 glibconfig_conf.set('guint16_format', guint16_format)
 
-if long_size == 4
-  gint32 = 'long'
-  gint32_modifier='"l"'
-  gint32_format='"li"'
-  guint32_format='"lu"'
-  guint32_align = long_align
-endif
-if int_size == 4
-  gint32 = 'int'
-  gint32_modifier='""'
-  gint32_format='"i"'
-  guint32_format='"u"'
-  guint32_align = int_align
-endif
 if short_size == 4
   gint32 = 'short'
   gint32_modifier='"h"'
   gint32_format='"hi"'
   guint32_format='"hu"'
   guint32_align = short_align
+elif int_size == 4
+  gint32 = 'int'
+  gint32_modifier='""'
+  gint32_format='"i"'
+  guint32_format='"u"'
+  guint32_align = int_align
+elif long_size == 4
+  gint32 = 'long'
+  gint32_modifier='"l"'
+  gint32_format='"li"'
+  guint32_format='"lu"'
+  guint32_align = long_align
+else
+  error('Compiler provides no native 32-bit integer type')
 endif
 glibconfig_conf.set('gint32', gint32)
 glibconfig_conf.set('gint32_modifier', gint32_modifier)
@@ -821,34 +828,6 @@ glibconfig_conf.set('gint32_format', gint32_format)
 glibconfig_conf.set('guint32_format', guint32_format)
 glib_conf.set('ALIGNOF_GUINT32', guint32_align)
 
-if long_long_size == 8
-  gint64 = 'long long'
-  glib_extension=''
-  # On Windows, only long long is 8 bytes in length. MSVC supports both ll and
-  # I64 as format specifiers, but some versions of MinGW only support I64.
-  if host_system == 'windows'
-    gint64_modifier='"I64"'
-    gint64_format='"I64i"'
-    guint64_format='"I64u"'
-  else
-    gint64_modifier='"ll"'
-    gint64_format='"lli"'
-    guint64_format='"llu"'
-  endif
-  gint64_constant='(val##LL)'
-  guint64_constant='(val##ULL)'
-  guint64_align = long_long_align
-endif
-if long_size == 8
-  gint64 = 'long'
-  glib_extension=''
-  gint64_modifier='"l"'
-  gint64_format='"li"'
-  guint64_format='"lu"'
-  gint64_constant='(val##L)'
-  guint64_constant='(val##UL)'
-  guint64_align = long_align
-endif
 if int_size == 8
   gint64 = 'int'
   gint64_modifier='""'
@@ -858,10 +837,26 @@ if int_size == 8
   gint64_constant='(val)'
   guint64_constant='(val)'
   guint64_align = int_align
-endif
-if short_size == 8
-  # Another one broken in configure.ac
-  gint64 = 'short'
+elif long_size == 8
+  gint64 = 'long'
+  glib_extension=''
+  gint64_modifier='"l"'
+  gint64_format='"li"'
+  guint64_format='"lu"'
+  gint64_constant='(val##L)'
+  guint64_constant='(val##UL)'
+  guint64_align = long_align
+elif long_long_size == 8
+  gint64 = 'long long'
+  glib_extension=''
+  gint64_modifier=int64_m + '"'
+  gint64_format=int64_m + 'i"'
+  guint64_format=int64_m + 'u"'
+  gint64_constant='(val##LL)'
+  guint64_constant='(val##ULL)'
+  guint64_align = long_long_align
+else
+  error('Compiler provides no native 64-bit integer type')
 endif
 glibconfig_conf.set('gint64', gint64)
 glibconfig_conf.set('gint64_modifier', gint64_modifier)
@@ -906,10 +901,10 @@ elif sizet_size == long_size
   glibconfig_conf.set('glib_msize_type', 'LONG')
 elif sizet_size == long_long_size
   glibconfig_conf.set('glib_size_type_define', 'long long')
-  glibconfig_conf.set('gsize_modifier', '"I64"')
-  glibconfig_conf.set('gssize_modifier', '"I64"')
-  glibconfig_conf.set('gsize_format', '"I64u"')
-  glibconfig_conf.set('gssize_format', '"I64i"')
+  glibconfig_conf.set('gsize_modifier', int64_m + '"')
+  glibconfig_conf.set('gssize_modifier', int64_m + '"')
+  glibconfig_conf.set('gsize_format', int64_m + 'u"')
+  glibconfig_conf.set('gssize_format', int64_m + 'i"')
   glibconfig_conf.set('glib_msize_type', 'INT64')
 else
   error('Could not determine size of size_t.')
@@ -931,19 +926,11 @@ elif voidp_size == long_size
   glibconfig_conf.set('glib_gpui_cast', '(gulong)')
 elif voidp_size == long_long_size
   glibconfig_conf.set('glib_intptr_type_define', 'long long')
-  glibconfig_conf.set('gintptr_modifier', '"I64"')
-  glibconfig_conf.set('gintptr_format', '"I64i"')
-  glibconfig_conf.set('guintptr_format', '"I64u"')
+  glibconfig_conf.set('gintptr_modifier', int64_m + '"')
+  glibconfig_conf.set('gintptr_format', int64_m + 'i"')
+  glibconfig_conf.set('guintptr_format', int64_m + 'u"')
   glibconfig_conf.set('glib_gpi_cast', '(gint64)')
   glibconfig_conf.set('glib_gpui_cast', '(guint64)')
-# FIXME
-#elif voidp_size == __int64_size
-#  glib_intptr_type_define=__int64
-#  gintptr_modifier='"I64"'
-#  gintptr_format='"I64i"'
-#  guintptr_format='"I64u"'
-#  glib_gpi_cast='(gint64)'
-#  glib_gpui_cast='(guint64)'
 else
   error('Could not determine size of void *')
 endif
