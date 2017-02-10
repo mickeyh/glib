@@ -52,7 +52,9 @@ libgobject = shared_library('gobject-2.0',
   install : true,
   include_directories : [configinc],
   dependencies : [libffi_dep, libglib_dep],
-  c_args : ['-DG_LOG_DOMAIN="GLib-GObject"', '-DGOBJECT_COMPILATION'])
+  c_args : ['-DG_LOG_DOMAIN="GLib-GObject"', '-DGOBJECT_COMPILATION'],
+  name_prefix : 'lib',
+  )
 
 libgobject_dep = declare_dependency(link_with : libgobject,
   include_directories : gobjectinc)

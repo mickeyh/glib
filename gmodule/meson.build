@@ -92,6 +92,7 @@ libgmodule = shared_library('gmodule-2.0',
   include_directories : [configinc, gmoduleinc],
   dependencies : [libdl_dep, libglib_dep],
   c_args : ['-DG_LOG_DOMAIN="GModule"', '-DG_DISABLE_DEPRECATED'],
+  name_prefix : 'lib',
 )
 
 libgmodule_dep = declare_dependency(link_with : libgmodule,

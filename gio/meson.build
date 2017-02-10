@@ -686,6 +686,7 @@ libgio = shared_library('gio-2.0',
   c_args : gio_c_args,
   # intl.lib is not compatible with SAFESEH
   link_args : noseh_link_args,
+  name_prefix : 'lib',
 )
 
 libgio_dep = declare_dependency(link_with : libgio,
